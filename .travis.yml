@@ -1,0 +1,30 @@
+language: go
+sudo: false
+
+notifications:
+  slack: c0demonk3ys:gnjXYwuoMOBnffg9h8YnlLyE
+
+git:
+  depth: 5
+
+addons:
+  apt:
+    packages: [ 'xorg-dev', 'libglu1-mesa-dev', 'libasound2-dev' ]
+
+env:
+  - GO111MODULE=on
+
+go:
+  - "1.11"
+  - master
+
+before_install:
+  - GO111MODULE=off go get -u github.com/shuLhan/go-bindata/...
+
+install:
+  - true
+
+script:
+  - go generate ./...
+  - cd example
+  - make
