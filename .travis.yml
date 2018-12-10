@@ -1,0 +1,18 @@
+language: go
+sudo: false
+
+notifications:
+  slack: c0demonk3ys:gnjXYwuoMOBnffg9h8YnlLyE
+
+git:
+  depth: 5
+
+go:
+  - "1.11"
+  - master
+
+script:
+  - go version
+  - go generate ./...
+  - cd example
+  - make

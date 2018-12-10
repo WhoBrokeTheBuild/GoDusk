@@ -1,2 +1,3 @@
 *.gen.go
 *.exe
+example/example
