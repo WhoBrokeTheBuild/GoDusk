@@ -5,6 +5,7 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 
+	"github.com/WhoBrokeTheBuild/GoDusk/asset"
 	"github.com/WhoBrokeTheBuild/GoDusk/context"
 	"github.com/WhoBrokeTheBuild/GoDusk/types"
 	"github.com/WhoBrokeTheBuild/GoDusk/ui"
@@ -33,6 +34,8 @@ type App struct {
 	Window *Window
 	UI     *ui.Overlay
 
+	defaultShader *asset.Shader
+
 	updateFuncs []UpdateFunc
 	renderFuncs []RenderFunc
 
@@ -58,15 +61,38 @@ func NewApp(opts *AppOptions) (app *App, err error) {
 		return
 	}
 
+	app.defaultShader, err = asset.NewShaderFromFiles([]string{"data/shaders/default.vs.glsl", "data/shaders/default.fs.glsl"})
+	if err != nil {
+		return
+	}
+
 	aspect := float32(app.Window.Width) / float32(app.Window.Height)
 	app.updateCtx = &context.Update{}
 	app.renderCtx = &context.Render{
 		View:       mgl32.LookAtV(mgl32.Vec3{2, 2, 2}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0}),
 		Projection: mgl32.Perspective(mgl32.DegToRad(45.0), aspect, 0.1, 100.0),
-		Shader:     nil,
+		Shader:     app.defaultShader,
 	}
 
 	return
+}
+
+// Delete frees an App's resources
+func (app *App) Delete() {
+	if app.defaultShader != nil {
+		app.defaultShader.Delete()
+		app.defaultShader = nil
+	}
+
+	if app.UI != nil {
+		app.UI.Delete()
+		app.UI = nil
+	}
+
+	if app.Window != nil {
+		app.Window.Delete()
+		app.Window = nil
+	}
 }
 
 func (app *App) RegisterUpdateFunc(fun UpdateFunc) {
@@ -129,18 +155,5 @@ func (app *App) Run() {
 
 			app.Window.SwapBuffers()
 		}
-	}
-}
-
-// Delete frees an App's resources
-func (app *App) Delete() {
-	if app.UI != nil {
-		app.UI.Delete()
-		app.UI = nil
-	}
-
-	if app.Window != nil {
-		app.Window.Delete()
-		app.Window = nil
 	}
 }

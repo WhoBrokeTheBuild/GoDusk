@@ -145,10 +145,10 @@ func (m *Mesh) UpdateData(data *MeshData) error {
 	return nil
 }
 
-// Draw renders a Mesh to the screen
-func (m *Mesh) Draw(ctx renderContext) {
+// Render renders a Mesh to the screen
+func (m *Mesh) Render(s *Shader) {
 	if m.Material != nil {
-		m.Material.Bind(ctx.GetShader())
+		m.Material.Bind(s)
 	}
 
 	gl.BindVertexArray(m.VAO)

@@ -1,11 +1,12 @@
+[![Build Status](https://travis-ci.org/WhoBrokeTheBuild/GoDusk.svg?branch=master)](https://travis-ci.org/WhoBrokeTheBuild/GoDusk)
+
 # Building
 
 GoDusk relies on `go-bindata`, which can be automatically run with `go generate`.
 After pulling, run the following:
 
 ```
-go generate load/...
-go generate example/...
+go generate ./...
 ```
 
 Then you can build and use the library normally.

@@ -130,13 +130,15 @@ func (c *Image) updateMesh() {
 
 // Draw renders the Image to the buffer
 func (c *Image) Draw(ctx *context.Render) {
-	gl.Uniform1i(ctx.Shader.GetUniformLocation("uTexture"), 0)
+	s := ctx.GetShader()
+
+	gl.Uniform1i(s.GetUniformLocation("uTexture"), 0)
 
 	gl.ActiveTexture(gl.TEXTURE0)
 	if c.Texture != nil {
 		c.Texture.Bind()
 	}
 	if c.Mesh != nil {
-		c.Mesh.Draw(ctx)
+		c.Mesh.Render(s)
 	}
 }

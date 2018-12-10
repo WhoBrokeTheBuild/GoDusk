@@ -137,7 +137,7 @@ func (o *Overlay) Draw() {
 	o.Buffer.Bind()
 
 	gl.Clear(gl.DEPTH_BUFFER_BIT)
-	o.Mesh.Draw(&o.RenderCtx)
+	o.Mesh.Render(o.RenderCtx.GetShader())
 
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 }

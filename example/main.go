@@ -37,6 +37,12 @@ func main() {
 	fps.SetPosition(mgl32.Vec2{float32(app.Window.Width) - 60, 5})
 	app.UI.AddComponent(fps)
 
+	box, err := dusk.NewModelFromFile("data/models/crate/crate.obj")
+	if err != nil {
+		panic(err)
+	}
+	defer box.Delete()
+
 	lastFPS := 0
 	app.RegisterUpdateFunc(func(ctx *context.Update) {
 		if lastFPS != ctx.FPS {
@@ -51,6 +57,10 @@ func main() {
 			}
 			fps.SetText(fmt.Sprintf("FPS %d", ctx.FPS))
 		}
+	})
+
+	app.RegisterRenderFunc(func(ctx *context.Render) {
+		box.Render(ctx)
 	})
 
 	app.Run()
