@@ -1,8 +1,25 @@
 package dusk
 
-import "github.com/WhoBrokeTheBuild/GoDusk/context"
+type Scene struct {
+	Actors []*Actor
+}
 
-type Scene interface {
-	Update(*context.Update)
-	Render(*context.Render)
+func NewScene() *Scene {
+	return &Scene{}
+}
+
+func (s *Scene) AddActor(actor *Actor) {
+	s.Actors = append(s.Actors, actor)
+}
+
+func (s *Scene) Update(ctx *UpdateContext) {
+	for _, a := range s.Actors {
+		a.Update(ctx)
+	}
+}
+
+func (s *Scene) Render(ctx *RenderContext) {
+	for _, a := range s.Actors {
+		a.Render(ctx)
+	}
 }

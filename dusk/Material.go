@@ -1,10 +1,11 @@
-package asset
+package dusk
 
 import (
 	gl "github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+// Material represents a collection of settings and textures
 type Material struct {
 	Ambient  mgl32.Vec4
 	Diffuse  mgl32.Vec4
@@ -15,6 +16,7 @@ type Material struct {
 	SpecularMap *Texture
 }
 
+// MaterialData is an intermediate object used to load a Material
 type MaterialData struct {
 	Ambient  mgl32.Vec4
 	Diffuse  mgl32.Vec4
@@ -34,7 +36,8 @@ const (
 	TexCoordAttrID uint32 = 2
 )
 
-func NewMaterial(data *MaterialData) (*Material, error) {
+// NewMaterialFromData creates a new Material from the given MaterialData
+func NewMaterialFromData(data *MaterialData) (*Material, error) {
 	var err error
 	m := &Material{
 		Ambient:  data.Ambient,
@@ -82,6 +85,7 @@ func (m *Material) Delete() {
 	}
 }
 
+// Bind sets all uniforms and textures used by this Material
 func (m *Material) Bind(s *Shader) {
 	gl.Uniform1i(s.GetUniformLocation("uAmbientMap"), 0)
 	if m.AmbientMap != nil {
@@ -111,6 +115,7 @@ func (m *Material) Bind(s *Shader) {
 	}
 }
 
+// UnBind resets the bindings used in Bind()
 func (m *Material) UnBind() {
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, 0)

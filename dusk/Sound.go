@@ -1,4 +1,4 @@
-package asset
+package dusk
 
 import (
 	"bytes"
@@ -12,9 +12,6 @@ import (
 	"github.com/faiface/beep/speaker"
 	"github.com/faiface/beep/vorbis"
 	"github.com/faiface/beep/wav"
-
-	"github.com/WhoBrokeTheBuild/GoDusk/load"
-	"github.com/WhoBrokeTheBuild/GoDusk/log"
 )
 
 func init() {
@@ -38,8 +35,8 @@ func NewSoundFromFile(filename string) (*Sound, error) {
 
 // LoadFromFile loads a Sound from a given file
 func (s *Sound) LoadFromFile(filename string) error {
-	log.Loadf("asset.Sound [%v]", filename)
-	b, err := load.Load(filename)
+	Loadf("asset.Sound [%v]", filename)
+	b, err := Load(filename)
 	if err != nil {
 		return err
 	}

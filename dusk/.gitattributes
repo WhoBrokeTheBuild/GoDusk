@@ -1,3 +1,0 @@
-data/models/ filter=lfs diff=lfs merge=lfs -text
-data/music/ filter=lfs diff=lfs merge=lfs -text
-data/ui/ filter=lfs diff=lfs merge=lfs -text

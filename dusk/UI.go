@@ -1,32 +1,29 @@
-package ui
+package dusk
 
 import (
 	"fmt"
 
-	"github.com/WhoBrokeTheBuild/GoDusk/asset"
-	"github.com/WhoBrokeTheBuild/GoDusk/context"
-	"github.com/WhoBrokeTheBuild/GoDusk/types"
 	gl "github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-// Overlay represents a UI layer
-type Overlay struct {
-	Buffer     *asset.Texture
-	Shader     *asset.Shader
-	Mesh       *asset.Mesh
-	RenderCtx  context.Render
-	Size       types.Vec2i
-	Components []Component
+// UI represents a UI layer
+type UI struct {
+	Buffer     *Texture
+	Shader     *Shader
+	Mesh       *Mesh
+	RenderCtx  RenderContext
+	Size       Vec2i
+	UIElements []UIElement
 
 	frameID           uint32
 	depthID           uint32
 	needTextureUpdate bool
 }
 
-// NewOverlay returns a new Overlay of the given size
-func NewOverlay(size types.Vec2i) (*Overlay, error) {
-	shader, err := asset.NewShaderFromFiles([]string{
+// NewUI returns a new UI of the given size
+func NewUI(size Vec2i) (*UI, error) {
+	shader, err := NewShaderFromFiles([]string{
 		"data/shaders/ui.vs.glsl",
 		"data/shaders/ui.fs.glsl",
 	})
@@ -44,7 +41,7 @@ func NewOverlay(size types.Vec2i) (*Overlay, error) {
 		depthID uint32
 	)
 
-	buffer, err := asset.NewTextureFromData(nil, gl.RGBA8, gl.RGBA, int(size.X()), int(size.Y()))
+	buffer, err := NewTextureFromData(nil, gl.RGBA8, gl.RGBA, int(size.X()), int(size.Y()))
 	if err != nil {
 		return nil, err
 	}
@@ -67,13 +64,13 @@ func NewOverlay(size types.Vec2i) (*Overlay, error) {
 
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 
-	return &Overlay{
+	return &UI{
 		Buffer: buffer,
 		Shader: shader,
 		Mesh:   mesh,
 		Size:   size,
 
-		RenderCtx: context.Render{
+		RenderCtx: RenderContext{
 			Projection: mgl32.Ortho2D(0, float32(size.X()), 0, float32(size.Y())),
 			Shader:     shader,
 		},
@@ -85,8 +82,8 @@ func NewOverlay(size types.Vec2i) (*Overlay, error) {
 	}, nil
 }
 
-// Delete frees all resources owned by the Overlay
-func (o *Overlay) Delete() {
+// Delete frees all resources owned by the UI
+func (o *UI) Delete() {
 	if o.Buffer != nil {
 		o.Buffer.Delete()
 		o.Buffer = nil
@@ -114,19 +111,19 @@ func (o *Overlay) Delete() {
 }
 
 // Update processes all events
-func (o *Overlay) Update(ctx *context.Update) {
+func (o *UI) Update(ctx *UpdateContext) {
 
 }
 
 // Draw renders the current buffer to the screen
-func (o *Overlay) Draw() {
+func (o *UI) Draw() {
 	o.Shader.Bind()
-	gl.UniformMatrix4fv(o.RenderCtx.GetShader().GetUniformLocation("uProjection"), 1, false, o.RenderCtx.GetProjectionPtr())
+	gl.UniformMatrix4fv(o.Shader.GetUniformLocation("uProjection"), 1, false, &o.RenderCtx.Projection[0])
 
 	gl.BindFramebuffer(gl.FRAMEBUFFER, o.frameID)
 	gl.ClearColor(0, 0, 0, 0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	for _, c := range o.Components {
+	for _, c := range o.UIElements {
 		c.Draw(&o.RenderCtx)
 		gl.Clear(gl.DEPTH_BUFFER_BIT)
 	}
@@ -137,12 +134,12 @@ func (o *Overlay) Draw() {
 	o.Buffer.Bind()
 
 	gl.Clear(gl.DEPTH_BUFFER_BIT)
-	o.Mesh.Render(o.RenderCtx.GetShader())
+	o.Mesh.Render(o.Shader)
 
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 }
 
-// AddComponent adds the given Component as a child node of the Overlay
-func (o *Overlay) AddComponent(c Component) {
-	o.Components = append(o.Components, c)
+// AddElement adds the given UIElement as a child node of the UI
+func (o *UI) AddElement(c UIElement) {
+	o.UIElements = append(o.UIElements, c)
 }

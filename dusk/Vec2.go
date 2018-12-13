@@ -1,17 +1,4 @@
-package types
-
-import (
-	"github.com/go-gl/mathgl/mgl32"
-	"github.com/go-gl/mathgl/mgl64"
-)
-
-type Vec2 mgl32.Vec2
-type Vec3 mgl32.Vec3
-type Vec4 mgl32.Vec4
-
-type Vec2d mgl64.Vec2
-type Vec3d mgl64.Vec3
-type Vec4d mgl64.Vec4
+package dusk
 
 type Vec2i [2]int
 

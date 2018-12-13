@@ -6,19 +6,37 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
 
-	"github.com/WhoBrokeTheBuild/GoDusk/context"
 	"github.com/WhoBrokeTheBuild/GoDusk/dusk"
-	"github.com/WhoBrokeTheBuild/GoDusk/load"
-	"github.com/WhoBrokeTheBuild/GoDusk/ui"
 )
 
 var GIT_SHORT = ""
 
+func NewRing(color mgl32.Vec4) *dusk.Actor {
+	actor, err := dusk.NewActor()
+	if err != nil {
+		panic(err)
+	}
+
+	mesh, err := dusk.NewMeshFromFile("data/models/torus.obj")
+	if err != nil {
+		panic(err)
+	}
+	actor.AddMesh(mesh)
+
+	mats := mesh.GetMaterials()
+	for _, m := range mats {
+		m.Diffuse = color
+	}
+
+	return actor
+}
+
 func main() {
-	load.RegisterFunc(Asset)
+	dusk.RegisterFunc(Asset)
 
 	opts := dusk.DefaultAppOptions()
 	opts.Window.Icons = []string{"data/icons/icon_64.png", "data/icons/icon_32.png"}
@@ -27,24 +45,30 @@ func main() {
 		panic(err)
 	}
 
-	app.UI.AddComponent(ui.NewImageFromFile("data/ui/menubar.png"))
+	app.UI.AddElement(dusk.NewUIImageFromFile("data/ui/menubar.png"))
 
-	menu := ui.NewText(fmt.Sprintf("GoDusk Example v%s %s", dusk.Version, GIT_SHORT), "data/ui/default.ttf", 18.0, color.White)
+	menu := dusk.NewUIText(fmt.Sprintf("GoDusk Example v%s %s", dusk.Version, GIT_SHORT), "data/ui/default.ttf", 18.0, color.White)
 	menu.SetPosition(mgl32.Vec2{10, 5})
-	app.UI.AddComponent(menu)
+	app.UI.AddElement(menu)
 
-	fps := ui.NewText("FPS 00", "data/ui/default.ttf", 18.0, color.White)
+	fps := dusk.NewUIText("FPS 00", "data/ui/default.ttf", 18.0, color.White)
 	fps.SetPosition(mgl32.Vec2{float32(app.Window.Width) - 60, 5})
-	app.UI.AddComponent(fps)
+	app.UI.AddElement(fps)
 
-	box, err := dusk.NewModelFromFile("data/models/crate/crate.obj")
-	if err != nil {
-		panic(err)
-	}
-	defer box.Delete()
+	ringX := NewRing(mgl32.Vec4{1, 0, 0, 1})
+	defer ringX.Delete()
+	ringX.Transform.Scale = mgl32.Vec3{2.0, 2.0, 2.0}
+
+	ringY := NewRing(mgl32.Vec4{0, 1, 0, 1})
+	defer ringY.Delete()
+	ringY.Transform.Scale = mgl32.Vec3{1.5, 1.5, 1.5}
+	ringY.Transform.Rotation[2] = math.Pi * 0.5
+
+	ringZ := NewRing(mgl32.Vec4{0, 0, 1, 1})
+	defer ringZ.Delete()
 
 	lastFPS := 0
-	app.RegisterUpdateFunc(func(ctx *context.Update) {
+	app.RegisterUpdateFunc(func(ctx *dusk.UpdateContext) {
 		if lastFPS != ctx.FPS {
 			lastFPS = ctx.FPS
 
@@ -57,10 +81,16 @@ func main() {
 			}
 			fps.SetText(fmt.Sprintf("FPS %d", ctx.FPS))
 		}
+
+		ringX.Transform.Rotation[0] += ctx.DeltaTime * -0.03
+		ringY.Transform.Rotation[1] += ctx.DeltaTime * -0.03
+		ringZ.Transform.Rotation[2] += ctx.DeltaTime * 0.03
 	})
 
-	app.RegisterRenderFunc(func(ctx *context.Render) {
-		box.Render(ctx)
+	app.RegisterRenderFunc(func(ctx *dusk.RenderContext) {
+		ringX.Render(ctx)
+		ringY.Render(ctx)
+		ringZ.Render(ctx)
 	})
 
 	app.Run()

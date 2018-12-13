@@ -1,10 +1,8 @@
-package asset
+package dusk
 
 import (
 	"path/filepath"
 
-	"github.com/WhoBrokeTheBuild/GoDusk/load"
-	"github.com/WhoBrokeTheBuild/GoDusk/log"
 	"github.com/WhoBrokeTheBuild/GoDusk/stbi"
 
 	gl "github.com/go-gl/gl/v4.1-core/gl"
@@ -79,14 +77,14 @@ func (t *Texture) LoadFromFile(filename string) error {
 	if a, found := _textures[filename]; found {
 		a.UseCount++
 		t.ID = a.ID
-		log.Loadf("asset.Texture @[%v]", filename)
+		Loadf("asset.Texture [%v]+", filename)
 		return nil
 	}
 
 	//stbi.SetFlipVerticallyOnLoad(stbi.True)
 
-	log.Loadf("asset.Texture [%v]", filename)
-	b, err := load.Load(filename)
+	Loadf("asset.Texture [%v]", filename)
+	b, err := Load(filename)
 	if err != nil {
 		return err
 	}

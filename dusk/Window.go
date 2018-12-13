@@ -13,9 +13,6 @@ import (
 
 	gl "github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
-
-	"github.com/WhoBrokeTheBuild/GoDusk/load"
-	"github.com/WhoBrokeTheBuild/GoDusk/log"
 )
 
 // WindowOptions is used to create a new Window
@@ -37,6 +34,7 @@ func DefaultWindowOptions() *WindowOptions {
 }
 
 type ResizeFunc func(int, int)
+type KeyFunc func(glfw.Key, glfw.Action)
 
 // Window represents a Window
 type Window struct {
@@ -45,6 +43,7 @@ type Window struct {
 	Title  string
 
 	resizeFuncs []ResizeFunc
+	keyFuncs    []KeyFunc
 
 	glfwWindow *glfw.Window
 }
@@ -86,18 +85,24 @@ func NewWindow(opts *WindowOptions) (w *Window, err error) {
 		}
 	})
 
+	w.glfwWindow.SetKeyCallback(func(_ *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		for _, f := range w.keyFuncs {
+			f(key, action)
+		}
+	})
+
 	if len(opts.Icons) > 0 {
 		icons := []image.Image{}
 		for _, file := range opts.Icons {
-			log.Loadf("Icon [%v]", file)
-			b, err := load.Load(file)
+			Loadf("Icon [%v]", file)
+			b, err := Load(file)
 			if err != nil {
-				log.Warnf("Failed to find icon [%v]", file)
+				Warnf("Failed to find icon [%v]", file)
 				continue
 			}
 			image, _, err := image.Decode(bytes.NewReader(b))
 			if err != nil {
-				log.Warnf("Failed to decode icon [%v]", file)
+				Warnf("Failed to decode icon [%v]", file)
 				continue
 			}
 			icons = append(icons, image)
@@ -114,10 +119,10 @@ func NewWindow(opts *WindowOptions) (w *Window, err error) {
 		return
 	}
 
-	log.Infof("OpenGL Version: [%s]", gl.GoStr(gl.GetString(gl.VERSION)))
-	log.Infof("GLSL Version: [%s]", gl.GoStr(gl.GetString(gl.SHADING_LANGUAGE_VERSION)))
-	log.Infof("OpenGL Vendor: [%s]", gl.GoStr(gl.GetString(gl.VENDOR)))
-	log.Infof("OpenGL Renderer: [%s]", gl.GoStr(gl.GetString(gl.RENDERER)))
+	Infof("OpenGL Version: [%s]", gl.GoStr(gl.GetString(gl.VERSION)))
+	Infof("GLSL Version: [%s]", gl.GoStr(gl.GetString(gl.SHADING_LANGUAGE_VERSION)))
+	Infof("OpenGL Vendor: [%s]", gl.GoStr(gl.GetString(gl.VENDOR)))
+	Infof("OpenGL Renderer: [%s]", gl.GoStr(gl.GetString(gl.RENDERER)))
 
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
@@ -142,6 +147,10 @@ func (w *Window) Delete() {
 
 func (w *Window) RegisterResizeFunc(fun ResizeFunc) {
 	w.resizeFuncs = append(w.resizeFuncs, fun)
+}
+
+func (w *Window) RegisterKeyFunc(fun KeyFunc) {
+	w.keyFuncs = append(w.keyFuncs, fun)
 }
 
 // ShouldClose returns true if the current window should close

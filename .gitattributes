@@ -1,0 +1,2 @@
+dusk/data/ filter=lfs diff=lfs merge=lfs -text
+example/data/ filter=lfs diff=lfs merge=lfs -text

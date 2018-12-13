@@ -2,7 +2,6 @@ uniform mat4 uProjection;
 uniform mat4 uView;
 uniform mat4 uModel;
 
-uniform vec3 uLight;
 uniform vec3 uCamera;
 
 layout(location = 0) in vec3 _Position;
@@ -21,7 +20,7 @@ void main() {
     p_Normal   = uModel * vec4(_Normal, 1.0);
     p_TexCoord = vec2(_TexCoord.x, 1.0 - _TexCoord.y);
 
-    p_LightDir = normalize(uLight - p_Position.xyz);
+    p_LightDir = normalize(vec3(1000, 1000, 1000) - p_Position.xyz);
     p_ViewDir  = normalize(uCamera - p_Position.xyz);
 
     gl_Position = uProjection * uView * uModel * vec4(_Position, 1);

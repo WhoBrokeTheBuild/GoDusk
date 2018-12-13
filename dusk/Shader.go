@@ -1,4 +1,4 @@
-package asset
+package dusk
 
 import (
 	"fmt"
@@ -7,8 +7,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/WhoBrokeTheBuild/GoDusk/load"
-	"github.com/WhoBrokeTheBuild/GoDusk/log"
 	gl "github.com/go-gl/gl/v4.1-core/gl"
 )
 
@@ -163,8 +161,8 @@ func compileShader(filename string) (uint32, error) {
 	t := getShaderType(filename)
 	id := gl.CreateShader(t)
 
-	log.Loadf("asset.Shader [%v]", filename)
-	b, err := load.Load(filename)
+	Loadf("asset.Shader [%v]", filename)
+	b, err := Load(filename)
 	if err != nil {
 		return InvalidID, err
 	}

@@ -4,11 +4,6 @@ import (
 	gl "github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
-
-	"github.com/WhoBrokeTheBuild/GoDusk/asset"
-	"github.com/WhoBrokeTheBuild/GoDusk/context"
-	"github.com/WhoBrokeTheBuild/GoDusk/types"
-	"github.com/WhoBrokeTheBuild/GoDusk/ui"
 )
 
 // AppOptions is used to create a new App
@@ -24,23 +19,25 @@ func DefaultAppOptions() *AppOptions {
 }
 
 // UpdateFunc is a function meant to be called during Update
-type UpdateFunc func(*context.Update)
+type UpdateFunc func(*UpdateContext)
 
 // RenderFunc is a function meant to be called during Render
-type RenderFunc func(*context.Render)
+type RenderFunc func(*RenderContext)
 
 // App represents an application
 type App struct {
 	Window *Window
-	UI     *ui.Overlay
+	UI     *UI
+	Scene  *Scene
 
-	defaultShader *asset.Shader
+	defaultCamera *Camera
+	defaultShader *Shader
 
 	updateFuncs []UpdateFunc
 	renderFuncs []RenderFunc
 
-	updateCtx *context.Update
-	renderCtx *context.Render
+	updateCtx *UpdateContext
+	renderCtx *RenderContext
 }
 
 // NewApp creates an new App from the given AppOptions
@@ -55,22 +52,27 @@ func NewApp(opts *AppOptions) (app *App, err error) {
 
 	app.Window.RegisterResizeFunc(func(width, height int) {})
 
-	app.UI, err = ui.NewOverlay(types.Vec2i{app.Window.Width, app.Window.Height})
+	app.Scene = NewScene()
+
+	app.UI, err = NewUI(Vec2i{app.Window.Width, app.Window.Height})
 	if err != nil {
 		app.Delete()
 		return
 	}
 
-	app.defaultShader, err = asset.NewShaderFromFiles([]string{"data/shaders/default.vs.glsl", "data/shaders/default.fs.glsl"})
+	app.defaultShader, err = NewShaderFromFiles([]string{"data/shaders/default.vs.glsl", "data/shaders/default.fs.glsl"})
 	if err != nil {
+		app.Delete()
 		return
 	}
 
+	app.defaultCamera = NewCamera(mgl32.Vec3{5, 5, 5}, mgl32.Vec3{0, 0, 0})
+
 	aspect := float32(app.Window.Width) / float32(app.Window.Height)
-	app.updateCtx = &context.Update{}
-	app.renderCtx = &context.Render{
-		View:       mgl32.LookAtV(mgl32.Vec3{2, 2, 2}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0}),
+	app.updateCtx = &UpdateContext{}
+	app.renderCtx = &RenderContext{
 		Projection: mgl32.Perspective(mgl32.DegToRad(45.0), aspect, 0.1, 100.0),
+		Camera:     app.defaultCamera,
 		Shader:     app.defaultShader,
 	}
 
@@ -103,6 +105,14 @@ func (app *App) RegisterRenderFunc(fun RenderFunc) {
 	app.renderFuncs = append(app.renderFuncs, fun)
 }
 
+func (app *App) SetScene(scene *Scene) {
+	app.Scene = scene
+}
+
+func (app *App) GetRenderContext() *RenderContext {
+	return app.renderCtx
+}
+
 // Run starts the update/render loop for the App, it will not return until the window closes
 func (app *App) Run() {
 	const (
@@ -124,7 +134,7 @@ func (app *App) Run() {
 
 		frameElap += elapsed
 		fpsElap += elapsed
-		app.updateCtx.DeltaTime = 0.0
+		app.updateCtx.DeltaTime = float32(elapsed / frameDelay)
 		app.updateCtx.ElapsedTime = elapsed
 
 		if fpsElap >= fpsDelay {
@@ -136,6 +146,10 @@ func (app *App) Run() {
 
 		app.Window.PollEvents()
 
+		if app.Scene != nil {
+			app.Scene.Update(app.updateCtx)
+		}
+
 		for _, f := range app.updateFuncs {
 			f(app.updateCtx)
 		}
@@ -146,6 +160,10 @@ func (app *App) Run() {
 
 			gl.ClearColor(0.0, 0.4, 0.8, 1.0)
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+			if app.Scene != nil {
+				app.Scene.Render(app.renderCtx)
+			}
 
 			for _, f := range app.renderFuncs {
 				f(app.renderCtx)

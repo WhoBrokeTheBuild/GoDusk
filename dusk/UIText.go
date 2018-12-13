@@ -1,12 +1,9 @@
-package ui
+package dusk
 
 import (
 	"image"
 	"image/color"
 
-	"github.com/WhoBrokeTheBuild/GoDusk/asset"
-	"github.com/WhoBrokeTheBuild/GoDusk/load"
-	"github.com/WhoBrokeTheBuild/GoDusk/log"
 	gl "github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/golang/freetype"
@@ -20,9 +17,9 @@ func init() {
 	_fonts = map[string]*truetype.Font{}
 }
 
-// Text is a Component that draws text to the screen
-type Text struct {
-	Image
+// UIText is a UIElement that draws text to the screen
+type UIText struct {
+	UIImage
 
 	Text  string
 	Size  float64
@@ -31,47 +28,47 @@ type Text struct {
 	Face  font.Face
 }
 
-// NewText returns a new Text from a given string, font, font size, and color
-func NewText(text string, font string, size float64, color color.Color) *Text {
+// NewUIText returns a new UIText from a given string, font, font size, and color
+func NewUIText(text string, font string, size float64, color color.Color) *UIText {
 	var f *truetype.Font
 
 	if tmp, found := _fonts[font]; found {
-		log.Loadf("ui.Font [%v]+", font)
+		Loadf("ui.Font [%v]+", font)
 		f = tmp
 	} else {
-		log.Loadf("ui.Font [%v]", font)
-		b, err := load.Load(font)
+		Loadf("ui.Font [%v]", font)
+		b, err := Load(font)
 		if err != nil {
-			log.Errorf("%v", err)
+			Errorf("%v", err)
 			return nil
 		}
 
 		f, err = freetype.ParseFont(b)
 		if err != nil {
-			log.Errorf("%v", err)
+			Errorf("%v", err)
 			return nil
 		}
 		_fonts[font] = f
 	}
 
-	c := &Text{
+	c := &UIText{
 		Text:  text,
 		Size:  size,
 		Color: color,
 		Font:  f,
 	}
-	c.updateTexture()
+	c.updateUITexture()
 
 	return c
 }
 
 // SetText sets the text to be rendered
-func (c *Text) SetText(text string) {
+func (c *UIText) SetText(text string) {
 	c.Text = text
-	c.updateTexture()
+	c.updateUITexture()
 }
 
-func (c *Text) updateTexture() {
+func (c *UIText) updateUITexture() {
 	var err error
 
 	if c.Texture != nil {
@@ -96,9 +93,9 @@ func (c *Text) updateTexture() {
 	d.DrawString(c.Text)
 
 	s := buffer.Rect.Size()
-	c.Texture, err = asset.NewTextureFromData(buffer.Pix, gl.RGBA, gl.RGBA, s.X, s.Y)
+	c.Texture, err = NewTextureFromData(buffer.Pix, gl.RGBA, gl.RGBA, s.X, s.Y)
 	if err != nil {
-		log.Errorf("%v", err)
+		Errorf("%v", err)
 	}
 
 	c.SetSize(mgl32.Vec2{float32(s.X), float32(s.Y)})
