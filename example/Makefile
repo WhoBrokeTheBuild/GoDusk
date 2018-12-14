@@ -1,6 +1,8 @@
 GIT_SHORT := $(shell git rev-parse --short HEAD)
 
-GOFLAGS ?= -tags debug
+TAGS ?= debug
+
+GOFLAGS ?= -tags $(TAGS)
 LDFLAGS ?= -ldflags "-X main.Build=$(GIT_SHORT)"
 
 EXT := 
