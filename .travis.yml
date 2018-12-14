@@ -12,8 +12,8 @@ addons:
     packages: [ 'xorg-dev', 'libglu1-mesa-dev', 'libasound2-dev' ]
 
 env:
-  - TAGS=debug
-  - TAGS=
+  - GOFLAGS='-tags debug'
+  - GOFLAGS=
 
 go:
   - "1.11"
