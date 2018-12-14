@@ -39,16 +39,6 @@ const (
 	typeRaw    = 'R'
 )
 
-var ignore = []string{
-	"FBXHeaderExtension",
-	"FileId",
-	"CreationTime",
-	"Creator",
-	"GlobalSettings",
-	"Documents",
-	"Takes",
-}
-
 type header struct {
 	Magic   [21]byte
 	_       [2]byte
@@ -184,7 +174,6 @@ func (p *prop) read(r *reader) (err error) {
 		fallthrough
 
 	case typeRaw:
-
 		var len uint32
 		err = binary.Read(r.Buffer, binary.LittleEndian, &len)
 		if err != nil {
@@ -355,21 +344,16 @@ func (n *node) read(r *reader) (err error) {
 		if err != nil {
 			return
 		}
-		skip := false
-		for _, name := range ignore {
-			if name == n.Name {
-				skip = true
-			}
-		}
-		if !skip {
-			n.Nodes = append(n.Nodes, nn)
-		}
+		n.Nodes = append(n.Nodes, nn)
 	}
 
 	return
 }
 
-func (n *node) find(name string) []*node {
+func (n *node) findAll(name string) []*node {
+	if n == nil {
+		return nil
+	}
 	nodes := []*node{}
 	for _, c := range n.Nodes {
 		if c.Name == name {
@@ -380,6 +364,9 @@ func (n *node) find(name string) []*node {
 }
 
 func (n *node) findFirst(name string) *node {
+	if n == nil {
+		return nil
+	}
 	for _, c := range n.Nodes {
 		if c.Name == name {
 			return c
@@ -389,6 +376,9 @@ func (n *node) findFirst(name string) *node {
 }
 
 func (n *node) findByID(id int64) *node {
+	if n == nil {
+		return nil
+	}
 	for _, c := range n.Nodes {
 		if len(c.Props) > 0 {
 			switch cID := c.Props[0].Value.(type) {
@@ -402,12 +392,81 @@ func (n *node) findByID(id int64) *node {
 	return nil
 }
 
+type conn struct {
+	Type string
+	A    *node
+	B    *node
+	Bind string
+}
+
+func newConn(root, n *node) *conn {
+	c := &conn{}
+
+	if len(n.Props) < 3 {
+		return nil
+	}
+
+	c.Type = n.Props[0].Value.(string)
+	a := n.Props[1].Value.(int64)
+	b := n.Props[2].Value.(int64)
+
+	if c.Type == "OP" {
+		if len(n.Props) >= 4 {
+			c.Bind = n.Props[3].Value.(string)
+		}
+	}
+
+	objNode := root.findFirst("Objects")
+	if objNode == nil {
+		return nil
+	}
+
+	c.A = objNode.findByID(a)
+	c.B = objNode.findByID(b)
+
+	return c
+}
+
+type propMap map[string]interface{}
+
+func newPropMap(n *node) propMap {
+	pm := propMap{}
+
+	pNodes := n.findAll("P")
+	for _, pNode := range pNodes {
+		if len(pNode.Props) < 4 {
+			dusk.Warnf("Not enough props in 'P' node")
+			continue
+		}
+		pName := pNode.Props[0].Value.(string)
+		pType := pNode.Props[1].Value.(string)
+
+		switch pType {
+		case "ColorRGB":
+			fallthrough
+		case "Vector3D":
+			fallthrough
+		case "Lcl Rotation":
+			fallthrough
+		case "Lcl Scaling":
+			if len(pNode.Props) < 7 {
+				dusk.Warnf("Not enough props in 'P' node")
+				continue
+			}
+			pm[pName] = mgl32.Vec3{
+				float32(pNode.Props[4].Value.(float64)),
+				float32(pNode.Props[5].Value.(float64)),
+				float32(pNode.Props[6].Value.(float64)),
+			}
+		}
+	}
+	return pm
+}
+
 // Load parses and returns the data from the file
 func Load(filename string) (data []*dusk.MeshData, err error) {
 	filename = filepath.Clean(filename)
 	dir := filepath.Dir(filename)
-
-	//materials := map[string]*dusk.MaterialData{}
 
 	file, err := dusk.Load(filename)
 	if err != nil {
@@ -445,26 +504,58 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 		if err != nil {
 			return
 		}
-		skip := false
-		for _, name := range ignore {
-			if name == n.Name {
-				skip = true
+		root.Nodes = append(root.Nodes, n)
+	}
+
+	var ambient mgl32.Vec4
+	var diffuse mgl32.Vec4
+	var specular mgl32.Vec4
+
+	defNode := root.findFirst("Definitions")
+	if defNode != nil {
+		objTypeNodes := defNode.findAll("ObjectType")
+		for _, otNode := range objTypeNodes {
+			if len(otNode.Props) == 0 {
+				continue
+			}
+			t := otNode.Props[0].Value.(string)
+			if t == "Geometry" || t == "Model" || t == "Material" {
+				propTempNode := otNode.findFirst("PropertyTemplate")
+				if propTempNode != nil {
+					p70Node := propTempNode.findFirst("Properties70")
+					if p70Node != nil {
+						pMap := newPropMap(p70Node)
+
+						if value, found := pMap["Color"].(mgl32.Vec3); found {
+							diffuse = mgl32.Vec4{value[0], value[1], value[2], 1.0}
+						}
+
+						if value, found := pMap["AmbientColor"].(mgl32.Vec3); found {
+							diffuse = mgl32.Vec4{value[0], value[1], value[2], 1.0}
+						}
+						if value, found := pMap["DiffuseColor"].(mgl32.Vec3); found {
+							diffuse = mgl32.Vec4{value[0], value[1], value[2], 1.0}
+						}
+						if value, found := pMap["SpecularColor"].(mgl32.Vec3); found {
+							specular = mgl32.Vec4{value[0], value[1], value[2], 1.0}
+						}
+					}
+				}
 			}
 		}
-		if !skip {
-			root.Nodes = append(root.Nodes, n)
+	}
+
+	conns := []*conn{}
+	connNode := root.findFirst("Connections")
+	if connNode != nil {
+		cNodes := connNode.findAll("C")
+		for _, cNode := range cNodes {
+			c := newConn(root, cNode)
+			if c != nil {
+				conns = append(conns, c)
+			}
 		}
 	}
-
-	//j, _ := json.MarshalIndent(&root, "", "  ")
-	//ioutil.WriteFile("test.json", j, os.ModePerm)
-
-	connNode := root.findFirst("Connections")
-	if connNode == nil {
-		return nil, fmt.Errorf("FBX has no 'Connections' node")
-	}
-
-	cNodes := connNode.find("C")
 
 	objNode := root.findFirst("Objects")
 	if objNode == nil {
@@ -472,130 +563,118 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 	}
 
 	data = []*dusk.MeshData{}
-	rotation := mgl32.Vec3{0, 0, 0}
-	scale := mgl32.Vec3{1, 1, 1}
+	modelNodes := objNode.findAll("Model")
+	for _, modelNode := range modelNodes {
+		var geomNode *node
+		var matNode *node
 
-	modelNodes := objNode.find("Model")
-	materialNodes := objNode.find("Material")
-	videoNodes := objNode.find("Video")
+		rotation := mgl32.Vec3{0, 0, 0}
+		scale := mgl32.Vec3{1, 1, 1}
 
-	geomNodes := objNode.find("Geometry")
-	for _, geomNode := range geomNodes {
-		geomID := geomNode.Props[0].Value.(int64)
-
-		conns := []int64{}
-
-		for _, cNode := range cNodes {
-			a := cNode.Props[1].Value.(int64)
-			b := cNode.Props[2].Value.(int64)
-			if geomID == a {
-				conns = append(conns, b)
+		for _, c := range conns {
+			if c.A == nil {
+				continue
 			}
-		}
 
-		modelID := int64(0)
-		for _, modelNode := range modelNodes {
-			tmp := modelNode.Props[0].Value.(int64)
-			for _, id := range conns {
-				if id == tmp {
-					modelID = tmp
-					propNode := modelNode.findFirst("Properties70")
-					if propNode != nil {
-						pNodes := propNode.find("P")
-						for _, pNode := range pNodes {
-							pName := pNode.Props[0].Value.(string)
-							if pName == "Lcl Rotation" {
-								rotation = mgl32.Vec3{
-									float32(pNode.Props[4].Value.(float64)),
-									float32(pNode.Props[5].Value.(float64)),
-									float32(pNode.Props[6].Value.(float64)),
-								}
-							} else if pName == "Lcl Scaling" {
-								scale = mgl32.Vec3{
-									float32(pNode.Props[4].Value.(float64) / 100.0),
-									float32(pNode.Props[5].Value.(float64) / 100.0),
-									float32(pNode.Props[6].Value.(float64) / 100.0),
-								}
-							}
-						}
-					}
-					break
+			if c.B == modelNode {
+				switch c.A.Name {
+				case "Geometry":
+					geomNode = c.A
+				case "Material":
+					matNode = c.A
 				}
 			}
 		}
 
-		conns = []int64{}
-		for _, cNode := range cNodes {
-			a := cNode.Props[1].Value.(int64)
-			b := cNode.Props[2].Value.(int64)
-			if modelID == b {
-				conns = append(conns, a)
-			}
+		if geomNode == nil {
+			continue
 		}
 
-		matID := int64(0)
-		for _, matNode := range materialNodes {
-			tmp := matNode.Props[0].Value.(int64)
-			for _, id := range conns {
-				if id == tmp {
-					matID = tmp
-					break
-				}
-			}
+		var pMap propMap
+		p70Node := modelNode.findFirst("Properties70")
+		if p70Node != nil {
+			pMap = newPropMap(p70Node)
 		}
 
-		diffTexID := int64(0)
-		bumpTexID := int64(0)
+		if value, found := pMap["Lcl Rotation"].(mgl32.Vec3); found {
+			rotation = value
+		}
 
-		conns = []int64{}
-		for _, cNode := range cNodes {
-			a := cNode.Props[1].Value.(int64)
-			b := cNode.Props[2].Value.(int64)
-			if matID == b {
-				if len(cNode.Props) >= 4 {
-					bind := cNode.Props[3].Value.(string)
-					switch bind {
+		if value, found := pMap["Lcl Scaling"].(mgl32.Vec3); found {
+			scale = value.Mul(1.0 / 100.0)
+		}
+
+		var ambientTexNode *node
+		var diffuseTexNode *node
+		var specularTexNode *node
+		var bumpTexNode *node
+
+		for _, c := range conns {
+			if c.A == nil {
+				continue
+			}
+
+			if c.B == matNode {
+				if c.A.Name == "Texture" {
+					switch c.Bind {
+					case "AmbientColor":
+						ambientTexNode = c.A
 					case "DiffuseColor":
-						diffTexID = a
+						diffuseTexNode = c.A
+					case "Specular":
+						specularTexNode = c.A
 					case "Bump":
-						bumpTexID = a
+						bumpTexNode = c.A
 					}
 				}
 			}
 		}
 
-		diffVideoID := int64(0)
-		bumpVideoID := int64(0)
+		matData := &dusk.MaterialData{
+			Ambient:  ambient,
+			Diffuse:  diffuse,
+			Specular: specular,
+		}
 
-		for _, cNode := range cNodes {
-			a := cNode.Props[1].Value.(int64)
-			b := cNode.Props[2].Value.(int64)
-			if b == diffTexID {
-				diffVideoID = a
-			} else if b == bumpTexID {
-				bumpVideoID = a
+		for _, c := range conns {
+			if c.A == nil {
+				continue
 			}
-		}
 
-		diffFilename := ""
-		bumpFilename := ""
+			if c.A.Name == "Video" {
+				fileNode := c.A.findFirst("Filename")
+				relFileNode := c.A.findFirst("RelativeFilename")
+				if fileNode == nil && relFileNode == nil {
+					continue
+				}
 
-		for _, vidNode := range videoNodes {
-			tmp := vidNode.Props[0].Value.(int64)
-			if tmp == diffVideoID {
-				filenameNode := vidNode.findFirst("RelativeFilename")
-				diffFilename = filenameNode.Props[0].Value.(string)
-			} else if tmp == bumpVideoID {
-				filenameNode := vidNode.findFirst("RelativeFilename")
-				bumpFilename = filenameNode.Props[0].Value.(string)
+				f := ""
+				if relFileNode != nil && len(relFileNode.Props) > 0 {
+					f = strings.Replace(relFileNode.Props[0].Value.(string), "\\", "/", -1)
+				}
+				// Empty, or Absolute Path (Linux/Windows)
+				if f == "" || f[0] == '/' || f[1:3] == ":/" {
+					if fileNode != nil && len(fileNode.Props) > 0 {
+						f = strings.Replace(fileNode.Props[0].Value.(string), "\\", "/", -1)
+					}
+				}
+
+				if f == "" {
+					continue
+				}
+
+				f = filepath.Join(dir, filepath.Clean(f))
+
+				if c.B == ambientTexNode {
+					matData.AmbientMap = f
+				} else if c.B == diffuseTexNode {
+					matData.DiffuseMap = f
+				} else if c.B == specularTexNode {
+					matData.SpecularMap = f
+				} else if c.B == bumpTexNode {
+					matData.BumpMap = f
+				}
 			}
-		}
-
-		if diffFilename != "" {
-			diffFilename = filepath.Join(dir, strings.Replace(diffFilename, "\\", "/", -1))
-		}
-		if bumpFilename != "" {
-			bumpFilename = filepath.Join(dir, strings.Replace(bumpFilename, "\\", "/", -1))
 		}
 
 		vertInds := []int32{}
@@ -699,11 +778,7 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 			}
 		}
 
-		mat, err := dusk.NewMaterialFromData(&dusk.MaterialData{
-			Diffuse:    mgl32.Vec4{0.8, 0.8, 0.8, 1.0},
-			DiffuseMap: diffFilename,
-			BumpMap:    bumpFilename,
-		})
+		mat, err := dusk.NewMaterialFromData(matData)
 		if err != nil {
 			return nil, err
 		}
@@ -765,7 +840,7 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 						}
 					} else if normReference == "IndexToDirect" {
 						for _, o := range order {
-							ind := inds[o] * 3
+							ind := inds[i+o] * 3
 							n := mgl32.Vec3{
 								float32(norms[ind+0]),
 								float32(norms[ind+1]),
@@ -814,8 +889,6 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 				}
 			}
 		}
-
-		//dusk.Verbosef("%v", d.TexCoords)
 
 		data = append(data, d)
 	}

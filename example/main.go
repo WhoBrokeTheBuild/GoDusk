@@ -43,7 +43,7 @@ func main() {
 		panic(err)
 	}
 
-	mesh, err := dusk.NewMeshFromFile("data/models/teapot.obj")
+	mesh, err := dusk.NewMeshFromFile("data/models/teapot.fbx")
 	if err != nil {
 		panic(err)
 	}
