@@ -1,19 +1,29 @@
-GIT_SHORT := $(shell git rev-parse --short HEAD)
+CONFIG ?= debug
+TAGS   ?=
 
-TAGS ?= debug
-
-GOFLAGS ?= -tags $(TAGS)
-LDFLAGS ?= -ldflags "-X main.Build=$(GIT_SHORT)"
-
-EXT := 
+TARGET := example
 ifeq ($(OS),Windows_NT)
-	EXT := .exe
+	TARGET := example.exe
 endif
 
-TARGET := example$(EXT)
+SOURCE ?= $(wildcard ../dusk/*.go ../dusk/obj/*.go ../dusk/fbx/*.go *.go)
 
-all:
-	go build $(GOFLAGS) $(LDFLAGS)
+GOFLAGS ?= 
+LDFLAGS ?= -X main.Build=$(shell git rev-parse --short HEAD)
 
-run: all
+ifeq ($(CONFIG),debug)
+	ifneq ($(OS),Windows_NT)
+		# go-bindata -debug breaks on windows
+    	TAGS += debug
+	endif
+else 
+	LDFLAGS += -s
+endif
+
+all: $(TARGET)
+
+$(TARGET):
+	go build -o $(TARGET) $(GOFLAGS) -tags "$(TAGS)" -ldflags "$(LDFLAGS)"
+
+run: $(TARGET)
 	./$(TARGET)

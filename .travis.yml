@@ -12,8 +12,8 @@ addons:
     packages: [ 'xorg-dev', 'libglu1-mesa-dev', 'libasound2-dev' ]
 
 env:
-  - GOFLAGS='-tags debug'
-  - GOFLAGS=
+  - CONFIG=debug
+  - CONFIG=release
 
 go:
   - "1.11"
@@ -28,5 +28,6 @@ install:
 script:
   - export GO111MODULE=on
   - go generate ./...
+  - go get ./...
   - cd example
   - make
