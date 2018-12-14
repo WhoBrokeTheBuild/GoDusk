@@ -14,6 +14,7 @@ type Material struct {
 	AmbientMap  *Texture
 	DiffuseMap  *Texture
 	SpecularMap *Texture
+	BumpMap     *Texture
 }
 
 // MaterialData is an intermediate object used to load a Material
@@ -25,6 +26,7 @@ type MaterialData struct {
 	AmbientMap  string
 	DiffuseMap  string
 	SpecularMap string
+	BumpMap     string
 }
 
 const (
@@ -66,6 +68,13 @@ func NewMaterialFromData(data *MaterialData) (*Material, error) {
 		}
 	}
 
+	if data.BumpMap != "" {
+		m.BumpMap, err = NewTextureFromFile(data.BumpMap)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return m, nil
 }
 
@@ -82,6 +91,10 @@ func (m *Material) Delete() {
 	if m.SpecularMap != nil {
 		m.SpecularMap.Delete()
 		m.SpecularMap = nil
+	}
+	if m.BumpMap != nil {
+		m.BumpMap.Delete()
+		m.BumpMap = nil
 	}
 }
 
@@ -113,6 +126,12 @@ func (m *Material) Bind(s *Shader) {
 	} else {
 		gl.Uniform4fv(s.GetUniformLocation("uSpecular"), 1, &m.Specular[0])
 	}
+
+	gl.Uniform1i(s.GetUniformLocation("uBumpMap"), 3)
+	if m.BumpMap != nil {
+		gl.ActiveTexture(gl.TEXTURE3)
+		m.BumpMap.Bind()
+	}
 }
 
 // UnBind resets the bindings used in Bind()
@@ -122,5 +141,7 @@ func (m *Material) UnBind() {
 	gl.ActiveTexture(gl.TEXTURE1)
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 	gl.ActiveTexture(gl.TEXTURE2)
+	gl.BindTexture(gl.TEXTURE_2D, 0)
+	gl.ActiveTexture(gl.TEXTURE3)
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 }

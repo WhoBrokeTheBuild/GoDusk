@@ -1,7 +1,7 @@
 GIT_SHORT := $(shell git rev-parse --short HEAD)
 
 GOFLAGS ?= -tags debug
-LDFLAGS ?= -ldflags "-X main.GIT_SHORT=$(GIT_SHORT)"
+LDFLAGS ?= -ldflags "-X main.Build=$(GIT_SHORT)"
 
 EXT := 
 ifeq ($(OS),Windows_NT)

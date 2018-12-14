@@ -4,71 +4,27 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
+
+	"github.com/WhoBrokeTheBuild/GoDusk/dusk"
 )
 
-type Object struct {
-	Name      string
-	Vertices  []mgl32.Vec3
-	Normals   []mgl32.Vec3
-	TexCoords []mgl32.Vec2
-	Material  *Material
+func init() {
+	dusk.RegisterMeshFormat("obj", []string{".obj"}, Load)
 }
 
-type Material struct {
-	Name                 string
-	Ambient              mgl32.Vec3
-	Diffuse              mgl32.Vec3
-	Specular             mgl32.Vec3
-	Shininess            float32
-	Dissolve             float32
-	AmbientMap           string
-	DiffuseMap           string
-	SpecularMap          string
-	SpecularHighlightMap string
-	BumpMap              string
-	AlphaMap             string
-	DisplacementMap      string
-	ReflectionMap        string
-}
+// Load parses and returns the data from the file
+func Load(filename string) ([]*dusk.MeshData, error) {
+	filename = filepath.Clean(filename)
+	dir := filepath.Dir(filename)
 
-type LoadFunc func(string) ([]byte, error)
+	data := []*dusk.MeshData{}
+	materials := map[string]*dusk.MaterialData{}
 
-type Reader interface {
-	Read() ([]*Object, error)
-}
-
-func NewReader(filename string) Reader {
-	return &reader{
-		filename: filename,
-		load:     ioutil.ReadFile,
-	}
-}
-
-func NewReaderEx(filename string, load LoadFunc) Reader {
-	return &reader{
-		filename: filename,
-		load:     load,
-	}
-}
-
-type reader struct {
-	filename string
-	load     LoadFunc
-}
-
-func (rdr *reader) Read() ([]*Object, error) {
-	rdr.filename = filepath.Clean(rdr.filename)
-	dir := filepath.Dir(rdr.filename)
-
-	objects := []*Object{}
-	materials := map[string]*Material{}
-
-	file, err := rdr.load(rdr.filename)
+	file, err := dusk.Load(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -79,9 +35,9 @@ func (rdr *reader) Read() ([]*Object, error) {
 
 	buf := bytes.NewBuffer(file)
 
-	var o *Object
+	var o *dusk.MeshData
 	var x, y, z, u, v float32
-	var f [3][3]int
+	var f [4][3]int
 
 	var hasNorm bool
 	var hasTxcd bool
@@ -119,47 +75,60 @@ func (rdr *reader) Read() ([]*Object, error) {
 			}
 		} else if line[0] == 'f' {
 			if o == nil {
-				o = &Object{
-					Name: "default",
-				}
-				objects = append(objects, o)
+				o = &dusk.MeshData{}
+				data = append(data, o)
 			}
 
+			polySize := 3
 			hasNorm = false
 			hasTxcd = false
 			if strings.Contains(line, "//") {
 				hasNorm = true
-				fmt.Sscanf(line[2:], "%d//%d %d//%d %d//%d",
+				polySize, _ = fmt.Sscanf(line[2:],
+					"%d//%d %d//%d %d//%d %d//%d",
 					&f[0][0], &f[0][2],
 					&f[1][0], &f[1][2],
-					&f[2][0], &f[2][2])
+					&f[2][0], &f[2][2],
+					&f[3][0], &f[3][2])
+				polySize /= 2
 			} else {
-				if strings.Count(line, "/") == 3 {
+				sc := strings.Count(line, "/")
+				if sc == 3 || sc == 4 {
 					hasTxcd = true
-					fmt.Sscanf(line[2:], "%d/%d %d/%d %d/%d",
+					polySize, _ = fmt.Sscanf(line[2:],
+						"%d/%d %d/%d %d/%d %d/%d",
 						&f[0][0], &f[0][1],
 						&f[1][0], &f[1][1],
+						&f[2][0], &f[2][1],
 						&f[2][0], &f[2][1])
+					polySize /= 2
 				} else {
 					hasNorm = true
 					hasTxcd = true
-					fmt.Sscanf(line[2:], "%d/%d/%d %d/%d/%d %d/%d/%d",
+					polySize, _ = fmt.Sscanf(line[2:],
+						"%d/%d/%d %d/%d/%d %d/%d/%d %d/%d/%d",
 						&f[0][0], &f[0][1], &f[0][2],
 						&f[1][0], &f[1][1], &f[1][2],
-						&f[2][0], &f[2][1], &f[2][2])
+						&f[2][0], &f[2][1], &f[2][2],
+						&f[3][0], &f[3][1], &f[3][2])
+					polySize /= 3
 				}
 			}
 			// TODO: Handle `f %d %d %d`
 
-			for i := 0; i < 3; i++ {
+			inds := []int{0, 1, 2}
+			if polySize == 4 {
+				inds = []int{0, 1, 2, 2, 3, 0}
+			}
+			for _, i := range inds {
 				if f[i][0] < 0 {
-					f[i][0] += len(verts)
+					f[i][0] += len(verts) + 1
 				}
 				if f[i][1] < 0 {
-					f[i][1] += len(txcds)
+					f[i][1] += len(txcds) + 1
 				}
 				if f[i][2] < 0 {
-					f[i][2] += len(norms)
+					f[i][2] += len(norms) + 1
 				}
 
 				o.Vertices = append(o.Vertices, verts[f[i][0]-1])
@@ -173,15 +142,14 @@ func (rdr *reader) Read() ([]*Object, error) {
 				}
 			}
 		} else if line[0] == 'o' {
-			o = &Object{
-				Name:      strings.TrimSpace(line[2:]),
+			o = &dusk.MeshData{
 				Vertices:  []mgl32.Vec3{},
 				Normals:   []mgl32.Vec3{},
 				TexCoords: []mgl32.Vec2{},
 			}
-			objects = append(objects, o)
+			data = append(data, o)
 		} else if strings.HasPrefix(line, "mtllib") {
-			tmp, err := rdr.readMaterial(filepath.Join(dir, strings.TrimSpace(line[7:])))
+			tmp, err := readMaterial(filepath.Join(dir, strings.TrimSpace(line[7:])))
 			if err != nil {
 				return nil, err
 			}
@@ -190,29 +158,30 @@ func (rdr *reader) Read() ([]*Object, error) {
 			}
 		} else if strings.HasPrefix(line, "usemtl") {
 			if o == nil {
-				o = &Object{
-					Name: "default",
-				}
-				objects = append(objects, o)
+				o = &dusk.MeshData{}
+				data = append(data, o)
 			}
 
 			name := strings.TrimSpace(line[7:])
 			if m, ok := materials[name]; ok {
-				o.Material = m
+				o.Material, err = dusk.NewMaterialFromData(m)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
 
-	return objects, nil
+	return data, nil
 }
 
-func (rdr *reader) readMaterial(filename string) (map[string]*Material, error) {
+func readMaterial(filename string) (map[string]*dusk.MaterialData, error) {
 	filename = filepath.Clean(filename)
 	dir := filepath.Dir(filename)
 
-	materials := map[string]*Material{}
+	materials := map[string]*dusk.MaterialData{}
 
-	file, err := rdr.load(filename)
+	file, err := dusk.Load(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +192,7 @@ func (rdr *reader) readMaterial(filename string) (map[string]*Material, error) {
 
 	buf := bytes.NewBuffer(file)
 
-	var m *Material
+	var m *dusk.MaterialData
 
 	for {
 		bytes, err := buf.ReadBytes('\n')
@@ -243,11 +212,10 @@ func (rdr *reader) readMaterial(filename string) (map[string]*Material, error) {
 
 		if strings.HasPrefix(line, "newmtl") { // newmtl
 			name := strings.TrimSpace(line[7:])
-			m = &Material{
-				Name:     name,
-				Ambient:  mgl32.Vec3{0, 0, 0},
-				Diffuse:  mgl32.Vec3{0, 0, 0},
-				Specular: mgl32.Vec3{0, 0, 0},
+			m = &dusk.MaterialData{
+				Ambient:  mgl32.Vec4{0, 0, 0, 1},
+				Diffuse:  mgl32.Vec4{0, 0, 0, 1},
+				Specular: mgl32.Vec4{0, 0, 0, 1},
 			}
 			materials[name] = m
 		} else if line[0] == 'K' {
@@ -269,7 +237,7 @@ func (rdr *reader) readMaterial(filename string) (map[string]*Material, error) {
 			}
 		} else if line[0] == 'N' && line[1] == 's' {
 			// Ns
-			fmt.Sscanf(line[3:], "%f", &m.Shininess)
+			//fmt.Sscanf(line[3:], "%f", &m.Shininess)
 		} else if strings.HasPrefix(line, "map_K") {
 			if line[5] == 'a' {
 				// map_Ka
@@ -283,22 +251,22 @@ func (rdr *reader) readMaterial(filename string) (map[string]*Material, error) {
 			}
 		} else if strings.HasPrefix(line, "map_Ns") {
 			// map_Ns
-			m.SpecularHighlightMap = filepath.Join(dir, strings.TrimSpace(line[7:]))
+			//m.SpecularHighlightMap = filepath.Join(dir, strings.TrimSpace(line[7:]))
 		} else if strings.HasPrefix(line, "bump") {
 			// bump
-			m.BumpMap = filepath.Join(dir, strings.TrimSpace(line[5:]))
+			//m.BumpMap = filepath.Join(dir, strings.TrimSpace(line[5:]))
 		} else if strings.HasPrefix(line, "map_bump") {
 			// map_bump
-			m.BumpMap = filepath.Join(dir, strings.TrimSpace(line[7:]))
+			//m.BumpMap = filepath.Join(dir, strings.TrimSpace(line[7:]))
 		} else if strings.HasPrefix(line, "disp") {
 			// disp
-			m.DisplacementMap = filepath.Join(dir, strings.TrimSpace(line[5:]))
+			//m.DisplacementMap = filepath.Join(dir, strings.TrimSpace(line[5:]))
 		} else if strings.HasPrefix(line, "refl") {
 			// refl
-			m.ReflectionMap = filepath.Join(dir, strings.TrimSpace(line[5:]))
+			//m.ReflectionMap = filepath.Join(dir, strings.TrimSpace(line[5:]))
 		} else if strings.HasPrefix(line, "map_d") {
 			// map_d
-			m.AlphaMap = filepath.Join(dir, strings.TrimSpace(line[6:]))
+			//m.AlphaMap = filepath.Join(dir, strings.TrimSpace(line[6:]))
 		}
 	}
 

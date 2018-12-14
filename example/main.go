@@ -11,29 +11,12 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 
 	"github.com/WhoBrokeTheBuild/GoDusk/dusk"
+	_ "github.com/WhoBrokeTheBuild/GoDusk/dusk/fbx"
+	_ "github.com/WhoBrokeTheBuild/GoDusk/dusk/obj"
 )
 
-var GIT_SHORT = ""
-
-func NewRing(color mgl32.Vec4) *dusk.Actor {
-	actor, err := dusk.NewActor()
-	if err != nil {
-		panic(err)
-	}
-
-	mesh, err := dusk.NewMeshFromFile("data/models/torus.obj")
-	if err != nil {
-		panic(err)
-	}
-	actor.AddMesh(mesh)
-
-	mats := mesh.GetMaterials()
-	for _, m := range mats {
-		m.Diffuse = color
-	}
-
-	return actor
-}
+// Build is a build identifier, generally the Git Short
+var Build = ""
 
 func main() {
 	dusk.RegisterFunc(Asset)
@@ -47,7 +30,7 @@ func main() {
 
 	app.UI.AddElement(dusk.NewUIImageFromFile("data/ui/menubar.png"))
 
-	menu := dusk.NewUIText(fmt.Sprintf("GoDusk Example v%s %s", dusk.Version, GIT_SHORT), "data/ui/default.ttf", 18.0, color.White)
+	menu := dusk.NewUIText(fmt.Sprintf("GoDusk Example v%s %s", dusk.Version, Build), "data/ui/default.ttf", 18.0, color.White)
 	menu.SetPosition(mgl32.Vec2{10, 5})
 	app.UI.AddElement(menu)
 
@@ -55,17 +38,16 @@ func main() {
 	fps.SetPosition(mgl32.Vec2{float32(app.Window.Width) - 60, 5})
 	app.UI.AddElement(fps)
 
-	ringX := NewRing(mgl32.Vec4{1, 0, 0, 1})
-	defer ringX.Delete()
-	ringX.Transform.Scale = mgl32.Vec3{2.0, 2.0, 2.0}
+	test, err := dusk.NewActor()
+	if err != nil {
+		panic(err)
+	}
 
-	ringY := NewRing(mgl32.Vec4{0, 1, 0, 1})
-	defer ringY.Delete()
-	ringY.Transform.Scale = mgl32.Vec3{1.5, 1.5, 1.5}
-	ringY.Transform.Rotation[2] = math.Pi * 0.5
-
-	ringZ := NewRing(mgl32.Vec4{0, 0, 1, 1})
-	defer ringZ.Delete()
+	mesh, err := dusk.NewMeshFromFile("data/models/teapot.obj")
+	if err != nil {
+		panic(err)
+	}
+	test.AddMesh(mesh)
 
 	lastFPS := 0
 	app.RegisterUpdateFunc(func(ctx *dusk.UpdateContext) {
@@ -82,15 +64,12 @@ func main() {
 			fps.SetText(fmt.Sprintf("FPS %d", ctx.FPS))
 		}
 
-		ringX.Transform.Rotation[0] += ctx.DeltaTime * -0.03
-		ringY.Transform.Rotation[1] += ctx.DeltaTime * -0.03
-		ringZ.Transform.Rotation[2] += ctx.DeltaTime * 0.03
+		test.Transform.Rotation[1] += ctx.DeltaTime * 0.01
+		test.Transform.Rotation[1] = float32(math.Mod(float64(test.Transform.Rotation[1]), math.Pi*2.0))
 	})
 
 	app.RegisterRenderFunc(func(ctx *dusk.RenderContext) {
-		ringX.Render(ctx)
-		ringY.Render(ctx)
-		ringZ.Render(ctx)
+		test.Render(ctx)
 	})
 
 	app.Run()

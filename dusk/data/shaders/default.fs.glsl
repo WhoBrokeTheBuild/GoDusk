@@ -5,6 +5,7 @@ uniform vec4 uSpecular;
 uniform sampler2D uAmbientMap; 
 uniform sampler2D uDiffuseMap; 
 uniform sampler2D uSpecularMap; 
+uniform sampler2D uBumpMap; 
 
 in vec4 p_Position;
 in vec4 p_Normal;
@@ -16,6 +17,7 @@ in vec3 p_ViewDir;
 out vec4 _Color;
 
 void main() {
+    //vec3 normal = texture(uBumpMap, p_TexCoord).rgb;
     vec3 normal = normalize(p_Normal.xyz);
     
     float d = max(dot(normal, p_LightDir), 0.0);

@@ -66,12 +66,12 @@ func NewApp(opts *AppOptions) (app *App, err error) {
 		return
 	}
 
-	app.defaultCamera = NewCamera(mgl32.Vec3{5, 5, 5}, mgl32.Vec3{0, 0, 0})
+	app.defaultCamera = NewCamera(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0.5, 0})
 
 	aspect := float32(app.Window.Width) / float32(app.Window.Height)
 	app.updateCtx = &UpdateContext{}
 	app.renderCtx = &RenderContext{
-		Projection: mgl32.Perspective(mgl32.DegToRad(45.0), aspect, 0.1, 100.0),
+		Projection: mgl32.Perspective(mgl32.DegToRad(45.0), aspect, 0.1, 10000.0),
 		Camera:     app.defaultCamera,
 		Shader:     app.defaultShader,
 	}

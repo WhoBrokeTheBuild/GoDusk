@@ -9,9 +9,36 @@ import (
 import (
 	"fmt"
 	"path/filepath"
-
-	"github.com/WhoBrokeTheBuild/GoDusk/dusk/obj"
 )
+
+// MeshLoader is a function that loads mesh data
+type MeshLoader func(filename string) ([]*MeshData, error)
+
+type meshFormat struct {
+	name   string
+	exts   []string
+	loader MeshLoader
+}
+
+func (f *meshFormat) hasExt(ext string) bool {
+	for i := range f.exts {
+		if f.exts[i] == ext {
+			return true
+		}
+	}
+	return false
+}
+
+var _meshFormats = map[string]meshFormat{}
+
+// RegisterMeshFormat adds a new handler for loading mesh files
+func RegisterMeshFormat(name string, exts []string, loader MeshLoader) {
+	_meshFormats[name] = meshFormat{
+		name:   name,
+		exts:   exts,
+		loader: loader,
+	}
+}
 
 // Mesh represents a set of OpenGL Vertex Array Objects and Material data
 type Mesh struct {
@@ -88,36 +115,27 @@ func (m *Mesh) LoadFromFile(filename string) error {
 	filename = filepath.Clean(filename)
 	m.Delete()
 
+	var loader MeshLoader
+
+	ext := filepath.Ext(filename)
+	for _, f := range _meshFormats {
+		if f.hasExt(ext) {
+			loader = f.loader
+		}
+	}
+
+	if loader == nil {
+		return fmt.Errorf("Unsupported format [%v]", ext)
+	}
+
 	Loadf("asset.Mesh [%v]", filename)
-	r := obj.NewReaderEx(filename, obj.LoadFunc(Load))
-	objs, err := r.Read()
+	data, err := loader(filename)
 	if err != nil {
 		return err
 	}
 
-	if len(objs) == 0 {
-		return fmt.Errorf("No objects loaded from [%v]", filename)
-	}
-
-	data := []*MeshData{}
-	for _, o := range objs {
-		mat, err := NewMaterialFromData(&MaterialData{
-			Ambient:     mgl32.Vec4{o.Material.Ambient[0], o.Material.Ambient[1], o.Material.Ambient[2], 1},
-			Diffuse:     mgl32.Vec4{o.Material.Diffuse[0], o.Material.Diffuse[1], o.Material.Diffuse[2], 1},
-			Specular:    mgl32.Vec4{o.Material.Specular[0], o.Material.Specular[1], o.Material.Specular[2], 1},
-			AmbientMap:  o.Material.AmbientMap,
-			DiffuseMap:  o.Material.DiffuseMap,
-			SpecularMap: o.Material.SpecularMap,
-		})
-		if err != nil {
-			return err
-		}
-		data = append(data, &MeshData{
-			Material:  mat,
-			Vertices:  o.Vertices,
-			Normals:   o.Normals,
-			TexCoords: o.TexCoords,
-		})
+	if len(data) == 0 {
+		return fmt.Errorf("No data loaded from [%v]", filename)
 	}
 
 	m.LoadFromData(data...)
