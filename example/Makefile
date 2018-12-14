@@ -22,7 +22,7 @@ endif
 
 all: $(TARGET)
 
-$(TARGET):
+$(TARGET): $(SOURCE)
 	go build -o $(TARGET) $(GOFLAGS) -tags "$(TAGS)" -ldflags "$(LDFLAGS)"
 
 run: $(TARGET)
