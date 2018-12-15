@@ -39,6 +39,28 @@ const (
 	typeRaw    = 'R'
 )
 
+var ignore = []string{
+	"Count",
+	"CreationTime",
+	"Creator",
+	"Culling",
+	"Current",
+	"Document",
+	"Edges",
+	"FBXHeaderExtension",
+	"FileId",
+	"GeometryVersion",
+	"MultiLayer",
+	"MultiTake",
+	"Shading",
+	"ShadingModel",
+	"Type",
+	"UseMipMap",
+	"Version",
+}
+
+var allNames = map[string]int{}
+
 type header struct {
 	Magic   [21]byte
 	_       [2]byte
@@ -57,35 +79,32 @@ type prop struct {
 }
 
 type reader struct {
-	Buffer    *bytes.Buffer
-	Header    *header
-	EndOffset int
+	Buffer *bytes.Reader
+	Header *header
 }
 
 func readArray(r *reader, size int) (data []byte, err error) {
 	var len uint32
 	err = binary.Read(r.Buffer, binary.LittleEndian, &len)
 	if err != nil {
-		panic(err)
 		return
 	}
 
 	var encoding uint32
 	err = binary.Read(r.Buffer, binary.LittleEndian, &encoding)
 	if err != nil {
-		panic(err)
 		return
 	}
 
 	var compLen uint32
 	err = binary.Read(r.Buffer, binary.LittleEndian, &compLen)
 	if err != nil {
-		panic(err)
 		return
 	}
 
 	if encoding == 1 {
-		tmp := r.Buffer.Next(int(compLen))
+		tmp := make([]byte, int(compLen))
+		r.Buffer.Read(tmp)
 
 		var z io.ReadCloser
 		z, err = zlib.NewReader(bytes.NewReader(tmp))
@@ -99,7 +118,8 @@ func readArray(r *reader, size int) (data []byte, err error) {
 			return
 		}
 	} else {
-		data = r.Buffer.Next(int(len) * size)
+		data = make([]byte, int(len)*size)
+		r.Buffer.Read(data)
 	}
 
 	return
@@ -320,7 +340,21 @@ func (n *node) read(r *reader) (err error) {
 		return
 	}
 
-	n.Name = string(r.Buffer.Next(int(h.GetNameLen())))
+	tmp := make([]byte, int(h.GetNameLen()))
+	r.Buffer.Read(tmp)
+	n.Name = string(tmp)
+
+	skip := false
+	for _, name := range ignore {
+		if n.Name == name {
+			skip = true
+		}
+	}
+
+	if skip {
+		r.Buffer.Seek(int64(h.GetEndOffset()), io.SeekStart)
+		return
+	}
 
 	n.Props = []*prop{}
 	n.Nodes = []*node{}
@@ -335,8 +369,7 @@ func (n *node) read(r *reader) (err error) {
 	}
 
 	for {
-		off := r.EndOffset - r.Buffer.Len()
-		if off == h.GetEndOffset() {
+		if int(r.Buffer.Size())-r.Buffer.Len() == h.GetEndOffset() {
 			break
 		}
 		nn := &node{}
@@ -473,12 +506,9 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 		return
 	}
 
-	b := bytes.NewBuffer(file)
-
 	r := &reader{
-		Buffer:    b,
-		Header:    &header{},
-		EndOffset: b.Len(),
+		Buffer: bytes.NewReader(file),
+		Header: &header{},
 	}
 
 	err = binary.Read(r.Buffer, binary.LittleEndian, r.Header)
@@ -565,6 +595,10 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 	data = []*dusk.MeshData{}
 	modelNodes := objNode.findAll("Model")
 	for _, modelNode := range modelNodes {
+		name := modelNode.Props[1].Value.(string)
+		name = name[:len(name)-7]
+		dusk.Verbosef("Processing Object [%v]", name)
+
 		var geomNode *node
 		var matNode *node
 
@@ -787,6 +821,7 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 		_ = txcdInds
 
 		d := &dusk.MeshData{
+			Name:      name,
 			Vertices:  []mgl32.Vec3{},
 			Normals:   []mgl32.Vec3{},
 			TexCoords: []mgl32.Vec2{},
@@ -816,10 +851,18 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 					float32(verts[ind+1]),
 					float32(verts[ind+2]),
 				}
-				v = mgl32.TransformCoordinate(v, mgl32.HomogRotate3DX(rotation[0]*(-180.0/math.Pi)))
-				v = mgl32.TransformCoordinate(v, mgl32.HomogRotate3DY(rotation[1]*(-180.0/math.Pi)))
-				v = mgl32.TransformCoordinate(v, mgl32.HomogRotate3DZ(rotation[2]*(-180.0/math.Pi)))
-				v = mgl32.TransformCoordinate(v, mgl32.Scale3D(scale[0], scale[1], scale[2]))
+				if rotation[0] != 0 {
+					v = mgl32.TransformCoordinate(v, mgl32.HomogRotate3DX(rotation[0]*(-180.0/math.Pi)))
+				}
+				if rotation[1] != 0 {
+					v = mgl32.TransformCoordinate(v, mgl32.HomogRotate3DY(rotation[1]*(-180.0/math.Pi)))
+				}
+				if rotation[2] != 0 {
+					v = mgl32.TransformCoordinate(v, mgl32.HomogRotate3DZ(rotation[2]*(-180.0/math.Pi)))
+				}
+				if !scale.ApproxEqual(mgl32.Vec3{1, 1, 1}) {
+					v = mgl32.TransformCoordinate(v, mgl32.Scale3D(scale[0], scale[1], scale[2]))
+				}
 				d.Vertices = append(d.Vertices, v)
 			}
 
@@ -833,9 +876,15 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 								float32(norms[ind+1]),
 								float32(norms[ind+2]),
 							}
-							n = mgl32.TransformNormal(n, mgl32.HomogRotate3DX(rotation[0]*(-180.0/math.Pi)))
-							n = mgl32.TransformNormal(n, mgl32.HomogRotate3DY(rotation[1]*(-180.0/math.Pi)))
-							n = mgl32.TransformNormal(n, mgl32.HomogRotate3DZ(rotation[2]*(-180.0/math.Pi)))
+							if rotation[0] != 0 {
+								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DX(rotation[0]*(-180.0/math.Pi)))
+							}
+							if rotation[1] != 0 {
+								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DY(rotation[1]*(-180.0/math.Pi)))
+							}
+							if rotation[2] != 0 {
+								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DZ(rotation[2]*(-180.0/math.Pi)))
+							}
 							d.Normals = append(d.Normals, n)
 						}
 					} else if normReference == "IndexToDirect" {
@@ -846,9 +895,15 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 								float32(norms[ind+1]),
 								float32(norms[ind+2]),
 							}
-							n = mgl32.TransformNormal(n, mgl32.HomogRotate3DX(rotation[0]*(-180.0/math.Pi)))
-							n = mgl32.TransformNormal(n, mgl32.HomogRotate3DY(rotation[1]*(-180.0/math.Pi)))
-							n = mgl32.TransformNormal(n, mgl32.HomogRotate3DZ(rotation[2]*(-180.0/math.Pi)))
+							if rotation[0] != 0 {
+								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DX(rotation[0]*(-180.0/math.Pi)))
+							}
+							if rotation[1] != 0 {
+								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DY(rotation[1]*(-180.0/math.Pi)))
+							}
+							if rotation[2] != 0 {
+								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DZ(rotation[2]*(-180.0/math.Pi)))
+							}
 							d.Normals = append(d.Normals, n)
 						}
 					}
@@ -892,6 +947,8 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 
 		data = append(data, d)
 	}
+
+	dusk.Verbosef("%#v", allNames)
 
 	return
 }

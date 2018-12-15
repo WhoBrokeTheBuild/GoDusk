@@ -46,6 +46,7 @@ type Mesh struct {
 }
 
 type meshGroup struct {
+	name string
 	material *Material
 	vao      uint32
 	vbo      uint32
@@ -55,6 +56,7 @@ type meshGroup struct {
 
 // MeshData is the intermediate data format for loading Meshes from Memory
 type MeshData struct {
+	Name     string
 	Material *Material
 
 	Vertices  []mgl32.Vec3

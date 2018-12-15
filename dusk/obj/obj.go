@@ -142,12 +142,19 @@ func Load(filename string) ([]*dusk.MeshData, error) {
 				}
 			}
 		} else if line[0] == 'o' {
-			o = &dusk.MeshData{
-				Vertices:  []mgl32.Vec3{},
-				Normals:   []mgl32.Vec3{},
-				TexCoords: []mgl32.Vec2{},
+			name := strings.TrimSpace(line[2:])
+			dusk.Verbosef("Processing Object [%v]", name)
+			if o != nil && o.Name == "" {
+				o.Name = name
+			} else {
+				o = &dusk.MeshData{
+					Name:      name,
+					Vertices:  []mgl32.Vec3{},
+					Normals:   []mgl32.Vec3{},
+					TexCoords: []mgl32.Vec2{},
+				}
+				data = append(data, o)
 			}
-			data = append(data, o)
 		} else if strings.HasPrefix(line, "mtllib") {
 			tmp, err := readMaterial(filepath.Join(dir, strings.TrimSpace(line[7:])))
 			if err != nil {
