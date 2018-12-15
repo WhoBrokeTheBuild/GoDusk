@@ -13,6 +13,7 @@ import (
 
 	gl "github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 // WindowOptions is used to create a new Window
@@ -35,6 +36,8 @@ func DefaultWindowOptions() *WindowOptions {
 
 type ResizeFunc func(int, int)
 type KeyFunc func(glfw.Key, glfw.Action)
+type MouseFunc func(glfw.MouseButton, glfw.Action)
+type MouseMoveFunc func(mgl32.Vec2)
 
 // Window represents a Window
 type Window struct {
@@ -42,8 +45,10 @@ type Window struct {
 	Height int
 	Title  string
 
-	resizeFuncs []ResizeFunc
-	keyFuncs    []KeyFunc
+	resizeFuncs    []ResizeFunc
+	keyFuncs       []KeyFunc
+	mouseFuncs     []MouseFunc
+	mouseMoveFuncs []MouseMoveFunc
 
 	glfwWindow *glfw.Window
 }
@@ -88,6 +93,18 @@ func NewWindow(opts *WindowOptions) (w *Window, err error) {
 	w.glfwWindow.SetKeyCallback(func(_ *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		for _, f := range w.keyFuncs {
 			f(key, action)
+		}
+	})
+
+	w.glfwWindow.SetMouseButtonCallback(func(_ *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
+		for _, f := range w.mouseFuncs {
+			f(button, action)
+		}
+	})
+
+	w.glfwWindow.SetCursorPosCallback(func(_ *glfw.Window, x, y float64) {
+		for _, f := range w.mouseMoveFuncs {
+			f(mgl32.Vec2{float32(x), float32(y)})
 		}
 	})
 
@@ -151,6 +168,19 @@ func (w *Window) RegisterResizeFunc(fun ResizeFunc) {
 
 func (w *Window) RegisterKeyFunc(fun KeyFunc) {
 	w.keyFuncs = append(w.keyFuncs, fun)
+}
+
+func (w *Window) RegisterMouseFunc(fun MouseFunc) {
+	w.mouseFuncs = append(w.mouseFuncs, fun)
+}
+
+func (w *Window) RegisterMouseMoveFunc(fun MouseMoveFunc) {
+	w.mouseMoveFuncs = append(w.mouseMoveFuncs, fun)
+}
+
+func (w *Window) GetMousePos() mgl32.Vec2 {
+	x, y := w.glfwWindow.GetCursorPos()
+	return mgl32.Vec2{float32(x), float32(y)}
 }
 
 // ShouldClose returns true if the current window should close

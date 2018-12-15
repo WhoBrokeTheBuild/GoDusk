@@ -66,7 +66,7 @@ func NewApp(opts *AppOptions) (app *App, err error) {
 		return
 	}
 
-	app.defaultCamera = NewCamera(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0.5, 0})
+	app.defaultCamera = NewCamera(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0, 0})
 
 	aspect := float32(app.Window.Width) / float32(app.Window.Height)
 	app.updateCtx = &UpdateContext{}
