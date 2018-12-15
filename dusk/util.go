@@ -1,6 +1,11 @@
 package dusk
 
 import (
+	"fmt"
+	"math"
+	"strconv"
+	"strings"
+
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -39,4 +44,14 @@ func update2DMesh(mesh *Mesh, dst, src mgl32.Vec4) error {
 		return err
 	}
 	return err
+}
+
+func addLineNumbers(code string) string {
+	lines := strings.Split(code, "\n")
+	w := int(math.Log10(float64(len(lines)))) + 1
+	f := "%" + strconv.Itoa(w) + "v: %v"
+	for i := range lines {
+		lines[i] = fmt.Sprintf(f, i+1, lines[i])
+	}
+	return strings.Join(lines, "\n")
 }

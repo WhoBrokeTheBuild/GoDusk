@@ -14,7 +14,7 @@ type Material struct {
 	AmbientMap  *Texture
 	DiffuseMap  *Texture
 	SpecularMap *Texture
-	BumpMap     *Texture
+	NormalMap   *Texture
 }
 
 // MaterialData is an intermediate object used to load a Material
@@ -26,7 +26,7 @@ type MaterialData struct {
 	AmbientMap  string
 	DiffuseMap  string
 	SpecularMap string
-	BumpMap     string
+	NormalMap   string
 }
 
 const (
@@ -36,7 +36,25 @@ const (
 	NormalAttrID uint32 = 1
 	// TexCoordAttrID is the attribute ID of _TexCoord in GLSL
 	TexCoordAttrID uint32 = 2
+
+	AmbientMapFlag  uint32 = 1
+	DiffuseMapFlag  uint32 = 2
+	SpecularMapFlag uint32 = 4
+	NormalMapFlag   uint32 = 8
 )
+
+func init() {
+	RegisterShaderDefines(map[string]interface{}{
+		"ATTR_POSITION": PositionAttrID,
+		"ATTR_NORMAL":   NormalAttrID,
+		"ATTR_TEXCOORD": TexCoordAttrID,
+
+		"FLAG_AMBIENT_MAP":  AmbientMapFlag,
+		"FLAG_DIFFUSE_MAP":  DiffuseMapFlag,
+		"FLAG_SPECULAR_MAP": SpecularMapFlag,
+		"FLAG_NORMAL_MAP":   NormalMapFlag,
+	})
+}
 
 // NewMaterialFromData creates a new Material from the given MaterialData
 func NewMaterialFromData(data *MaterialData) (*Material, error) {
@@ -68,8 +86,8 @@ func NewMaterialFromData(data *MaterialData) (*Material, error) {
 		}
 	}
 
-	if data.BumpMap != "" {
-		m.BumpMap, err = NewTextureFromFile(data.BumpMap)
+	if data.NormalMap != "" {
+		m.NormalMap, err = NewTextureFromFile(data.NormalMap)
 		if err != nil {
 			return nil, err
 		}
@@ -92,46 +110,52 @@ func (m *Material) Delete() {
 		m.SpecularMap.Delete()
 		m.SpecularMap = nil
 	}
-	if m.BumpMap != nil {
-		m.BumpMap.Delete()
-		m.BumpMap = nil
+	if m.NormalMap != nil {
+		m.NormalMap.Delete()
+		m.NormalMap = nil
 	}
 }
 
 // Bind sets all uniforms and textures used by this Material
 func (m *Material) Bind(s *Shader) {
+	flags := uint32(0)
+
+	gl.Uniform4fv(s.GetUniformLocation("uAmbient"), 1, &m.Ambient[0])
 	gl.Uniform1i(s.GetUniformLocation("uAmbientMap"), 0)
 	if m.AmbientMap != nil {
 		gl.ActiveTexture(gl.TEXTURE0)
 		m.AmbientMap.Bind()
-		gl.Uniform4fv(s.GetUniformLocation("uAmbient"), 1, &[]float32{0, 0, 0, 0}[0])
-	} else {
-		gl.Uniform4fv(s.GetUniformLocation("uAmbient"), 1, &m.Ambient[0])
+
+		flags |= AmbientMapFlag
 	}
 
+	gl.Uniform4fv(s.GetUniformLocation("uDiffuse"), 1, &m.Diffuse[0])
 	gl.Uniform1i(s.GetUniformLocation("uDiffuseMap"), 1)
 	if m.DiffuseMap != nil {
 		gl.ActiveTexture(gl.TEXTURE1)
 		m.DiffuseMap.Bind()
-		gl.Uniform4fv(s.GetUniformLocation("uDiffuse"), 1, &[]float32{0, 0, 0, 0}[0])
-	} else {
-		gl.Uniform4fv(s.GetUniformLocation("uDiffuse"), 1, &m.Diffuse[0])
+
+		flags |= DiffuseMapFlag
 	}
 
+	gl.Uniform4fv(s.GetUniformLocation("uSpecular"), 1, &m.Specular[0])
 	gl.Uniform1i(s.GetUniformLocation("uSpecularMap"), 2)
 	if m.SpecularMap != nil {
 		gl.ActiveTexture(gl.TEXTURE2)
 		m.SpecularMap.Bind()
-		gl.Uniform4fv(s.GetUniformLocation("uSpecular"), 1, &[]float32{0, 0, 0, 0}[0])
-	} else {
-		gl.Uniform4fv(s.GetUniformLocation("uSpecular"), 1, &m.Specular[0])
+
+		flags |= SpecularMapFlag
 	}
 
-	gl.Uniform1i(s.GetUniformLocation("uBumpMap"), 3)
-	if m.BumpMap != nil {
+	gl.Uniform1i(s.GetUniformLocation("uNormalMap"), 3)
+	if m.NormalMap != nil {
 		gl.ActiveTexture(gl.TEXTURE3)
-		m.BumpMap.Bind()
+		m.NormalMap.Bind()
+
+		flags |= NormalMapFlag
 	}
+
+	gl.Uniform1ui(s.GetUniformLocation("uMapFlags"), flags)
 }
 
 // UnBind resets the bindings used in Bind()

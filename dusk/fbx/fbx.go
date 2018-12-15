@@ -639,7 +639,7 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 		var ambientTexNode *node
 		var diffuseTexNode *node
 		var specularTexNode *node
-		var bumpTexNode *node
+		var normalTexNode *node
 
 		for _, c := range conns {
 			if c.A == nil {
@@ -656,7 +656,7 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 					case "Specular":
 						specularTexNode = c.A
 					case "Bump":
-						bumpTexNode = c.A
+						normalTexNode = c.A
 					}
 				}
 			}
@@ -703,8 +703,8 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 					matData.DiffuseMap = f
 				} else if c.B == specularTexNode {
 					matData.SpecularMap = f
-				} else if c.B == bumpTexNode {
-					matData.BumpMap = f
+				} else if c.B == normalTexNode {
+					matData.NormalMap = f
 				}
 			}
 		}

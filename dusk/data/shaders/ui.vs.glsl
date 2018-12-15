@@ -1,7 +1,5 @@
-uniform mat4 uProjection;
-
-layout(location = 0) in vec3 _Position;
-layout(location = 2) in vec2 _TexCoord;
+#include <mvp.inc.glsl>
+#include <attribute.inc.glsl>
 
 out vec2 p_TexCoord;
 

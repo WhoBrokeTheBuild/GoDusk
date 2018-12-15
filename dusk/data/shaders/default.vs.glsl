@@ -1,12 +1,7 @@
-uniform mat4 uProjection;
-uniform mat4 uView;
-uniform mat4 uModel;
+#include <mvp.inc.glsl>
+#include <attribute.inc.glsl>
 
 uniform vec3 uCamera;
-
-layout(location = 0) in vec3 _Position;
-layout(location = 1) in vec3 _Normal;
-layout(location = 2) in vec2 _TexCoord;
 
 out vec4 p_Position;
 out vec4 p_Normal;

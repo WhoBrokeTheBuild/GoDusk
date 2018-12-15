@@ -10,6 +10,11 @@ import (
 	gl "github.com/go-gl/gl/v4.1-core/gl"
 )
 
+const (
+	// ShaderIncludePath is the path to search for files from #include <>
+	ShaderIncludePath = "data/shaders/include"
+)
+
 // Shader represents an OpenGL Shader Program
 type Shader struct {
 	ID       uint32
@@ -17,6 +22,21 @@ type Shader struct {
 }
 
 var _versionString string
+var _defaultDefines = map[string]string{}
+
+func RegisterShaderDefines(defines map[string]interface{}) {
+	for k, v := range defines {
+		_defaultDefines[k] = fmt.Sprintf("%v", v)
+	}
+}
+
+func GetShaderDefines() map[string]string {
+	tmp := map[string]string{}
+	for k, v := range _defaultDefines {
+		tmp[k] = v
+	}
+	return tmp
+}
 
 // NewShaderFromFiles returns a new Shader from the given files
 func NewShaderFromFiles(filenames []string) (*Shader, error) {
@@ -141,16 +161,98 @@ func getVersionString() string {
 	return _versionString
 }
 
-func preProcessShader(code string) string {
-	// Prepend `#version`
-	code = getVersionString() + code
+func preProcessFile(filename, code string) string {
+	code = preProcessCode(filename, code, GetShaderDefines())
+
+	// Prepend `#version`,
+	code = getVersionString() + "\n" + code
 
 	// Append null-terminator (windows)
 	code += "\x00"
 
+	return code
+}
+
+func preProcessCode(filename, code string, defines map[string]string) string {
+	dir := filepath.Dir(filename)
+
 	// Clean CRLF (windows)
-	re := regexp.MustCompile(`\r`)
-	code = re.ReplaceAllString(code, "")
+	code = strings.Replace(code, "\r", "", -1)
+
+	// PreProcessor statements
+	lines := strings.Split(code+"\n", "\n")
+
+	skipLines := false
+
+	newLines := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if len(line) > 0 && line[0] == '#' {
+			if strings.HasPrefix(line, "#include") {
+				file := strings.TrimSpace(line[8:])
+				if len(file) < 3 {
+					Warnf("No filename specified in #include")
+					continue
+				}
+				first, last := file[0], file[len(file)-1]
+				file = file[1 : len(file)-1]
+				if first == '<' && last == '>' {
+					file = filepath.Join(ShaderIncludePath, file)
+				} else if first == '"' && last == '"' {
+					file = filepath.Join(dir, file)
+				} else {
+					Warnf("Invalid #include format [%v]", line)
+					Warnf("#include's must be either \"filename\" or <filename>")
+					continue
+				}
+
+				b, err := Load(file)
+				if err != nil {
+					Warnf("Failed to include shader [%v]", file)
+				}
+				newLines = append(newLines,
+					strings.Split(
+						preProcessCode(file, string(b), defines),
+						"\n")...)
+
+			} else if strings.HasPrefix(line, "#define") {
+				parts := strings.SplitN(strings.TrimSpace(line[8:]), " ", 2)
+				name := parts[0]
+				value := ""
+				if len(parts) > 1 {
+					value = parts[1]
+				}
+				defines[name] = value
+			} else if strings.HasPrefix(line, "#undef") {
+				name := strings.TrimSpace(line[8:])
+				delete(defines, name)
+			} else if strings.HasPrefix(line, "#ifdef") {
+				name := strings.TrimSpace(line[7:])
+				if _, found := defines[name]; !found {
+					skipLines = true
+				}
+			} else if strings.HasPrefix(line, "#ifndef") {
+				name := strings.TrimSpace(line[8:])
+				if _, found := defines[name]; found {
+					skipLines = true
+				}
+			} else if strings.HasPrefix(line, "#endif") {
+				skipLines = false
+			}
+			continue
+		}
+
+		if skipLines {
+			continue
+		}
+
+		for key, val := range defines {
+			line = strings.Replace(line, key, val, -1)
+		}
+
+		newLines = append(newLines, line)
+	}
+
+	code = strings.Join(newLines, "\n")
 
 	return code
 }
@@ -167,7 +269,7 @@ func compileShader(filename string) (uint32, error) {
 		return InvalidID, err
 	}
 
-	code := preProcessShader(string(b))
+	code := preProcessFile(filename, string(b))
 
 	re := regexp.MustCompile(`\r`)
 	code = re.ReplaceAllString(code, "")
@@ -185,6 +287,8 @@ func compileShader(filename string) (uint32, error) {
 
 		log := strings.Repeat("\x00", int(logLen+1))
 		gl.GetShaderInfoLog(id, logLen, nil, gl.Str(log))
+
+		Infof("Full Shader Code:\n%v", addLineNumbers(code))
 
 		return InvalidID, fmt.Errorf("Failed to compile [%v]: %v", filename, log)
 	}
