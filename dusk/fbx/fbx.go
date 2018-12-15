@@ -59,8 +59,6 @@ var ignore = []string{
 	"Version",
 }
 
-var allNames = map[string]int{}
-
 type header struct {
 	Magic   [21]byte
 	_       [2]byte
@@ -947,8 +945,6 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 
 		data = append(data, d)
 	}
-
-	dusk.Verbosef("%#v", allNames)
 
 	return
 }

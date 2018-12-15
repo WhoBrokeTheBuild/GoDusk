@@ -3,6 +3,7 @@ package dusk
 import (
 	"image"
 	"image/color"
+	"path/filepath"
 
 	gl "github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
@@ -32,6 +33,7 @@ type UIText struct {
 func NewUIText(text string, font string, size float64, color color.Color) *UIText {
 	var f *truetype.Font
 
+	font = filepath.Clean(font)
 	if tmp, found := _fonts[font]; found {
 		Loadf("ui.Font [%v]+", font)
 		f = tmp
