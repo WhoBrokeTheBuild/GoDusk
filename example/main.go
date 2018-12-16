@@ -38,20 +38,17 @@ func main() {
 	fps.SetPosition(mgl32.Vec2{float32(app.Window.Width) - 60, 5})
 	app.UI.AddElement(fps)
 
-	test, err := dusk.NewActor()
-	if err != nil {
-		panic(err)
-	}
-
 	mesh, err := dusk.NewMeshFromFile("data/models/teapot.fbx")
 	if err != nil {
 		panic(err)
 	}
+
+	test := dusk.NewActor()
 	test.AddMesh(mesh)
 
 	cam := app.GetRenderContext().Camera
 	horizontalAngle := float32(math.Pi * 1.25)
-	verticalAngle := float32(math.Pi * -0.2)
+	verticalAngle := float32(math.Pi * -0.18)
 
 	mPos := mgl32.Vec2{}
 	mouseDown := false
@@ -125,8 +122,6 @@ func main() {
 			fps.SetText(fmt.Sprintf("FPS %d", ctx.FPS))
 		}
 
-		//cam.SetPosition()
-
 		camDir := mgl32.Vec3{
 			float32(math.Cos(float64(verticalAngle)) * math.Sin(float64(horizontalAngle))),
 			float32(math.Sin(float64(verticalAngle))),
@@ -134,8 +129,8 @@ func main() {
 		}
 		cam.SetLookAt(cam.Position.Add(camDir))
 
-		//test.Transform.Rotation[1] += ctx.DeltaTime * 0.01
-		//test.Transform.Rotation[1] = float32(math.Mod(float64(test.Transform.Rotation[1]), math.Pi*2.0))
+		test.Transform().Rotation[1] += ctx.DeltaTime * 0.01
+		test.Transform().Rotation[1] = float32(math.Mod(float64(test.Transform().Rotation[1]), math.Pi*2.0))
 	})
 
 	app.RegisterRenderFunc(func(ctx *dusk.RenderContext) {

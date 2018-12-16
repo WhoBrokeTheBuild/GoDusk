@@ -76,23 +76,29 @@ void main() {
 	`
 )
 
+// DefaultShader is the default shader used to render meshes
+type DefaultShader struct {
+	Shader
+}
+
+var _defaultShader *DefaultShader
+
 // GetDefaultShader returns an instance of the DefaultShader
 func GetDefaultShader() *DefaultShader {
 	if _defaultShader != nil {
 		return _defaultShader
 	}
-	_defaultShader = &DefaultShader{
-		Shader: NewShaderFromData(
-			&ShaderData{
-				Code: defaultShaderVert,
-				Type: gl.VERTEX_SHADER,
-			},
-			&ShaderData{
-				Code: defaultShaderFrag,
-				Type: gl.FRAGMENT_SHADER,
-			},
-		),
-	}
+	_defaultShader = &DefaultShader{}
+	_defaultShader.InitFromData(
+		&ShaderData{
+			Code: defaultShaderVert,
+			Type: gl.VERTEX_SHADER,
+		},
+		&ShaderData{
+			Code: defaultShaderFrag,
+			Type: gl.FRAGMENT_SHADER,
+		},
+	)
 	return _defaultShader
 }
 

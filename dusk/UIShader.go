@@ -40,18 +40,17 @@ func GetUIShader() *UIShader {
 	if _uiShader != nil {
 		return _uiShader
 	}
-	_uiShader = &UIShader{
-		Shader: NewShaderFromData(
-			&ShaderData{
-				Code: uiShaderVert,
-				Type: gl.VERTEX_SHADER,
-			},
-			&ShaderData{
-				Code: uiShaderFrag,
-				Type: gl.FRAGMENT_SHADER,
-			},
-		),
-	}
+	_uiShader = &UIShader{}
+	_uiShader.InitFromData(
+		&ShaderData{
+			Code: uiShaderVert,
+			Type: gl.VERTEX_SHADER,
+		},
+		&ShaderData{
+			Code: uiShaderFrag,
+			Type: gl.FRAGMENT_SHADER,
+		},
+	)
 	return _uiShader
 }
 

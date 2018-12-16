@@ -37,7 +37,11 @@ func GetShaderDefines() map[string]string {
 
 // IShader is an interface representing an OpenGL Shader Program
 type IShader interface {
+	InitFromFiles(...string)
+	InitFromData(...*ShaderData)
 	Delete()
+
+	ID() uint32
 
 	Bind(*RenderContext, interface{})
 
@@ -46,7 +50,7 @@ type IShader interface {
 
 // Shader represents a generic shader
 type Shader struct {
-	ID       uint32
+	id       uint32
 	uniforms map[string]int32
 }
 
@@ -56,47 +60,44 @@ type ShaderData struct {
 	Type uint32
 }
 
-// NewShaderFromFiles loads a new shader from a set of filenames
-func NewShaderFromFiles(filename ...string) Shader {
-	s := Shader{
-		ID: InvalidID,
-	}
+// InitFromFiles loads a new shader from a set of filenames
+func (s *Shader) InitFromFiles(filename ...string) {
+	s.Delete()
 
 	var err error
-	s.ID, err = loadShaderFromFiles(filename...)
+	s.id, err = loadShaderFromFiles(filename...)
 	if err != nil {
-		s.ID = InvalidID
+		s.id = InvalidID
 	}
-
-	return s
 }
 
-// NewShaderFromData loads a new shader from a set of filenames
-func NewShaderFromData(data ...*ShaderData) Shader {
-	s := Shader{
-		ID: InvalidID,
-	}
+// InitFromData loads a new shader from a set of filenames
+func (s *Shader) InitFromData(data ...*ShaderData) {
+	s.Delete()
 
 	var err error
-	s.ID, err = loadShaderFromData(data...)
+	s.id, err = loadShaderFromData(data...)
 	if err != nil {
-		s.ID = InvalidID
+		s.id = InvalidID
 	}
-
-	return s
 }
 
 // Delete frees all resources owned by the Shader
 func (s *Shader) Delete() {
-	if s.ID != InvalidID {
-		gl.DeleteProgram(s.ID)
-		s.ID = InvalidID
+	if s.id != InvalidID {
+		gl.DeleteProgram(s.id)
+		s.id = InvalidID
 	}
+}
+
+// ID returns the underlying OpenGL Shader Program ID
+func (s *Shader) ID() uint32 {
+	return s.id
 }
 
 // Bind binds this shader and all uniforms
 func (s *Shader) Bind(_ *RenderContext, _ interface{}) {
-	gl.UseProgram(s.ID)
+	gl.UseProgram(s.id)
 }
 
 // UniformLocation returns the location of the given uniform, or -1
@@ -120,15 +121,15 @@ func (s *Shader) cacheUniforms() {
 
 	buf := strings.Repeat("\x00", 256)
 
-	gl.GetProgramiv(s.ID, gl.ACTIVE_UNIFORMS, &count)
+	gl.GetProgramiv(s.id, gl.ACTIVE_UNIFORMS, &count)
 	for i := int32(0); i < count; i++ {
-		gl.GetActiveUniform(s.ID, uint32(i), int32(len(buf)), &length, &size, &tp, gl.Str(buf))
+		gl.GetActiveUniform(s.id, uint32(i), int32(len(buf)), &length, &size, &tp, gl.Str(buf))
 
 		// Force copy
 		name := make([]byte, length)
 		copy(name, []byte(buf[:length]))
 
-		s.uniforms[string(name)] = gl.GetUniformLocation(s.ID, gl.Str(string(name)+"\x00"))
+		s.uniforms[string(name)] = gl.GetUniformLocation(s.id, gl.Str(string(name)+"\x00"))
 	}
 }
 
