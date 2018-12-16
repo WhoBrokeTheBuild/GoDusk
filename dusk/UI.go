@@ -10,7 +10,7 @@ import (
 // UI represents a UI layer
 type UI struct {
 	Buffer     *Texture
-	Shader     *Shader
+	Shader     *UIShader
 	Mesh       *Mesh
 	RenderCtx  RenderContext
 	Size       Vec2i
@@ -23,14 +23,6 @@ type UI struct {
 
 // NewUI returns a new UI of the given size
 func NewUI(size Vec2i) (*UI, error) {
-	shader, err := NewShaderFromFiles([]string{
-		"data/shaders/ui.vs.glsl",
-		"data/shaders/ui.fs.glsl",
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	mesh, err := new2DMesh(mgl32.Vec4{0, 0, float32(size.X()), float32(size.Y())}, mgl32.Vec4{0, 1, 1, 0})
 	if err != nil {
 		return nil, err
@@ -66,13 +58,12 @@ func NewUI(size Vec2i) (*UI, error) {
 
 	return &UI{
 		Buffer: buffer,
-		Shader: shader,
+		Shader: GetUIShader(),
 		Mesh:   mesh,
 		Size:   size,
 
 		RenderCtx: RenderContext{
 			Projection: mgl32.Ortho2D(0, float32(size.X()), 0, float32(size.Y())),
-			Shader:     shader,
 		},
 
 		frameID: frameID,
@@ -117,8 +108,8 @@ func (o *UI) Update(ctx *UpdateContext) {
 
 // Draw renders the current buffer to the screen
 func (o *UI) Draw() {
-	o.Shader.Bind()
-	gl.UniformMatrix4fv(o.Shader.GetUniformLocation("uProjection"), 1, false, &o.RenderCtx.Projection[0])
+	o.Shader.Bind(&o.RenderCtx, nil)
+	gl.UniformMatrix4fv(o.Shader.UniformLocation("uProjection"), 1, false, &o.RenderCtx.Projection[0])
 
 	gl.BindFramebuffer(gl.FRAMEBUFFER, o.frameID)
 	gl.ClearColor(0, 0, 0, 0)
@@ -129,7 +120,7 @@ func (o *UI) Draw() {
 	}
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 
-	gl.Uniform1i(o.Shader.GetUniformLocation("uTexture"), 0)
+	gl.Uniform1i(o.Shader.UniformLocation("uTexture"), 0)
 	gl.ActiveTexture(gl.TEXTURE0)
 	o.Buffer.Bind()
 

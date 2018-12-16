@@ -1,7 +1,7 @@
 package main
 
-//go:generate go-bindata -tags debug -debug -pkg $GOPACKAGE -o data-debug.gen.go data/...
-//go:generate go-bindata -tags !debug -pkg $GOPACKAGE -o data.gen.go data/...
+//go:generate go-bindata -tags !release -debug -pkg $GOPACKAGE -o data.gen.go data/...
+//go:generate go-bindata -tags release -pkg $GOPACKAGE -o data-release.gen.go data/...
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/go-gl/glfw/v3.2/glfw"
 
 	"github.com/WhoBrokeTheBuild/GoDusk/dusk"
 	_ "github.com/WhoBrokeTheBuild/GoDusk/dusk/fbx"
@@ -31,11 +30,11 @@ func main() {
 
 	app.UI.AddElement(dusk.NewUIImageFromFile("data/ui/menubar.png"))
 
-	menu := dusk.NewUIText(fmt.Sprintf("GoDusk Example v%s %s", dusk.Version, Build), "data/ui/default.ttf", 18.0, color.White)
+	menu := dusk.NewUIText(fmt.Sprintf("GoDusk Example v%s %s", dusk.Version, Build), "data/fonts/default.ttf", 18.0, color.White)
 	menu.SetPosition(mgl32.Vec2{10, 5})
 	app.UI.AddElement(menu)
 
-	fps := dusk.NewUIText("FPS 00", "data/ui/default.ttf", 18.0, color.White)
+	fps := dusk.NewUIText("FPS 00", "data/fonts/default.ttf", 18.0, color.White)
 	fps.SetPosition(mgl32.Vec2{float32(app.Window.Width) - 60, 5})
 	app.UI.AddElement(fps)
 
@@ -51,23 +50,23 @@ func main() {
 	test.AddMesh(mesh)
 
 	cam := app.GetRenderContext().Camera
-	horizontalAngle := float32(math.Pi * 1.25);
+	horizontalAngle := float32(math.Pi * 1.25)
 	verticalAngle := float32(math.Pi * -0.2)
 
 	mPos := mgl32.Vec2{}
 	mouseDown := false
-	
-	app.Window.RegisterMouseFunc(func(button glfw.MouseButton, action glfw.Action) {
-		if button == glfw.MouseButtonLeft {
-			if action == glfw.Press {
+
+	app.Window.RegisterMouseFunc(func(button dusk.MouseButton, action dusk.InputAction) {
+		if button == dusk.MouseButtonLeft {
+			if action == dusk.Press {
 				mPos = app.Window.GetMousePos()
 				mouseDown = true
-			} else if action == glfw.Release {
+			} else if action == dusk.Release {
 				mouseDown = false
 			}
 		}
 	})
-	
+
 	app.Window.RegisterMouseMoveFunc(func(pos mgl32.Vec2) {
 		if mouseDown {
 			delta := pos.Sub(mPos).Mul(0.01)
@@ -77,33 +76,33 @@ func main() {
 		}
 	})
 
-	app.Window.RegisterKeyFunc(func(key glfw.Key, action glfw.Action) {
-		// if action == glfw.Press {
+	app.Window.RegisterKeyFunc(func(key dusk.Key, action dusk.InputAction) {
+		// if action == dusk.Press {
 		// 	switch key {
-		// 	case glfw.KeyLeft:
+		// 	case dusk.KeyLeft:
 		// 		turnSpeed = 0.1
-		// 	case glfw.KeyRight:
+		// 	case dusk.KeyRight:
 		// 		turnSpeed = -0.1
-		// 	case glfw.KeyUp:
+		// 	case dusk.KeyUp:
 		// 		moveSpeed = -1.0
-		// 	case glfw.KeyDown:
+		// 	case dusk.KeyDown:
 		// 		moveSpeed = 1.0
 		// 	}
-		// } else if action == glfw.Release {
+		// } else if action == dusk.Release {
 		// 	switch key {
-		// 	case glfw.KeyLeft:
+		// 	case dusk.KeyLeft:
 		// 		if turnSpeed > 0 {
 		// 			turnSpeed = 0
 		// 		}
-		// 	case glfw.KeyRight:
+		// 	case dusk.KeyRight:
 		// 		if turnSpeed < 0 {
 		// 			turnSpeed = 0
 		// 		}
-		// 	case glfw.KeyUp:
+		// 	case dusk.KeyUp:
 		// 		if moveSpeed < 0 {
 		// 			moveSpeed = 0
 		// 		}
-		// 	case glfw.KeyDown:
+		// 	case dusk.KeyDown:
 		// 		if moveSpeed > 0 {
 		// 			moveSpeed = 0
 		// 		}

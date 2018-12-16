@@ -31,7 +31,6 @@ type App struct {
 	Scene  *Scene
 
 	defaultCamera *Camera
-	defaultShader *Shader
 
 	updateFuncs []UpdateFunc
 	renderFuncs []RenderFunc
@@ -60,12 +59,6 @@ func NewApp(opts *AppOptions) (app *App, err error) {
 		return
 	}
 
-	app.defaultShader, err = NewShaderFromFiles([]string{"data/shaders/default.vs.glsl", "data/shaders/default.fs.glsl"})
-	if err != nil {
-		app.Delete()
-		return
-	}
-
 	app.defaultCamera = NewCamera(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0, 0})
 
 	aspect := float32(app.Window.Width) / float32(app.Window.Height)
@@ -73,7 +66,6 @@ func NewApp(opts *AppOptions) (app *App, err error) {
 	app.renderCtx = &RenderContext{
 		Projection: mgl32.Perspective(mgl32.DegToRad(45.0), aspect, 0.1, 10000.0),
 		Camera:     app.defaultCamera,
-		Shader:     app.defaultShader,
 	}
 
 	return
@@ -81,11 +73,6 @@ func NewApp(opts *AppOptions) (app *App, err error) {
 
 // Delete frees an App's resources
 func (app *App) Delete() {
-	if app.defaultShader != nil {
-		app.defaultShader.Delete()
-		app.defaultShader = nil
-	}
-
 	if app.UI != nil {
 		app.UI.Delete()
 		app.UI = nil
@@ -97,18 +84,22 @@ func (app *App) Delete() {
 	}
 }
 
+// RegisterUpdateFunc adds an update callback function
 func (app *App) RegisterUpdateFunc(fun UpdateFunc) {
 	app.updateFuncs = append(app.updateFuncs, fun)
 }
 
+// RegisterRenderFunc adds a render callback function
 func (app *App) RegisterRenderFunc(fun RenderFunc) {
 	app.renderFuncs = append(app.renderFuncs, fun)
 }
 
+// SetScene sets the current Scene
 func (app *App) SetScene(scene *Scene) {
 	app.Scene = scene
 }
 
+// GetRenderContext returns the default Render Context
 func (app *App) GetRenderContext() *RenderContext {
 	return app.renderCtx
 }

@@ -3,7 +3,6 @@ package dusk
 import (
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"unicode"
 
@@ -15,21 +14,19 @@ const (
 	ShaderIncludePath = "data/shaders/include"
 )
 
-// Shader represents an OpenGL Shader Program
-type Shader struct {
-	ID       uint32
-	Uniforms map[string]int32
-}
+var (
+	_versionString  string
+	_defaultDefines = map[string]string{}
+)
 
-var _versionString string
-var _defaultDefines = map[string]string{}
-
-func RegisterShaderDefines(defines map[string]interface{}) {
+// AddShaderDefines adds default #define values for processed shaders
+func AddShaderDefines(defines map[string]interface{}) {
 	for k, v := range defines {
 		_defaultDefines[k] = fmt.Sprintf("%v", v)
 	}
 }
 
+// GetShaderDefines returns a copy of the map of default shader defines
 func GetShaderDefines() map[string]string {
 	tmp := map[string]string{}
 	for k, v := range _defaultDefines {
@@ -38,20 +35,55 @@ func GetShaderDefines() map[string]string {
 	return tmp
 }
 
-// NewShaderFromFiles returns a new Shader from the given files
-func NewShaderFromFiles(filenames []string) (*Shader, error) {
-	s := &Shader{
-		ID:       InvalidID,
-		Uniforms: map[string]int32{},
+// IShader is an interface representing an OpenGL Shader Program
+type IShader interface {
+	Delete()
+
+	Bind(*RenderContext, interface{})
+
+	UniformLocation(string) int32
+}
+
+// Shader represents a generic shader
+type Shader struct {
+	ID       uint32
+	uniforms map[string]int32
+}
+
+// ShaderData represents a shader's code and type
+type ShaderData struct {
+	Code string
+	Type uint32
+}
+
+// NewShaderFromFiles loads a new shader from a set of filenames
+func NewShaderFromFiles(filename ...string) Shader {
+	s := Shader{
+		ID: InvalidID,
 	}
 
-	err := s.LoadFromFiles(filenames)
+	var err error
+	s.ID, err = loadShaderFromFiles(filename...)
 	if err != nil {
-		s.Delete()
-		return nil, err
+		s.ID = InvalidID
 	}
 
-	return s, nil
+	return s
+}
+
+// NewShaderFromData loads a new shader from a set of filenames
+func NewShaderFromData(data ...*ShaderData) Shader {
+	s := Shader{
+		ID: InvalidID,
+	}
+
+	var err error
+	s.ID, err = loadShaderFromData(data...)
+	if err != nil {
+		s.ID = InvalidID
+	}
+
+	return s
 }
 
 // Delete frees all resources owned by the Shader
@@ -62,71 +94,30 @@ func (s *Shader) Delete() {
 	}
 }
 
-// LoadFromFiles loads a shader from the given files
-func (s *Shader) LoadFromFiles(filenames []string) error {
-	s.Delete()
-
-	shaders := make([]uint32, 0, len(filenames))
-	for _, file := range filenames {
-		id, err := compileShader(file)
-		if err != nil {
-			return err
-		}
-		shaders = append(shaders, id)
-	}
-
-	s.ID = gl.CreateProgram()
-	for _, id := range shaders {
-		gl.AttachShader(s.ID, id)
-	}
-	gl.LinkProgram(s.ID)
-
-	var status int32
-	gl.GetProgramiv(s.ID, gl.LINK_STATUS, &status)
-	if status == gl.FALSE {
-		var logLen int32
-		gl.GetProgramiv(s.ID, gl.INFO_LOG_LENGTH, &logLen)
-
-		log := strings.Repeat("\x00", int(logLen+1))
-		gl.GetProgramInfoLog(s.ID, logLen, nil, gl.Str(log))
-
-		s.Delete()
-		return fmt.Errorf("Failed to link program: %v", log)
-	}
-
-	for _, id := range shaders {
-		gl.DeleteShader(id)
-	}
-
-	s.cacheUniforms()
-
-	return nil
-}
-
-// Bind calls glUseProgram with this Shader's ID
-func (s *Shader) Bind() error {
-	if s.ID == InvalidID {
-		return fmt.Errorf("Failed to bind program: Not loaded")
-	}
-
+// Bind binds this shader and all uniforms
+func (s *Shader) Bind(_ *RenderContext, _ interface{}) {
 	gl.UseProgram(s.ID)
-	return nil
 }
 
-// GetUniformLocation returns the uniform's location ID, or -1
-func (s *Shader) GetUniformLocation(name string) int32 {
-	if u, ok := s.Uniforms[name]; ok {
-		return u
+// UniformLocation returns the location of the given uniform, or -1
+func (s *Shader) UniformLocation(name string) int32 {
+	if len(s.uniforms) == 0 {
+		s.cacheUniforms()
+	}
+	if loc, found := s.uniforms[name]; found {
+		return loc
 	}
 	return -1
 }
 
 func (s *Shader) cacheUniforms() {
-	var count int32
+	s.uniforms = map[string]int32{}
 
+	var count int32
 	var size int32
 	var length int32
 	var tp uint32
+
 	buf := strings.Repeat("\x00", 256)
 
 	gl.GetProgramiv(s.ID, gl.ACTIVE_UNIFORMS, &count)
@@ -137,8 +128,65 @@ func (s *Shader) cacheUniforms() {
 		name := make([]byte, length)
 		copy(name, []byte(buf[:length]))
 
-		s.Uniforms[string(name)] = gl.GetUniformLocation(s.ID, gl.Str(string(name)+"\x00"))
+		s.uniforms[string(name)] = gl.GetUniformLocation(s.ID, gl.Str(string(name)+"\x00"))
 	}
+}
+
+func loadShaderFromFiles(filenames ...string) (uint32, error) {
+	data := make([]*ShaderData, 0, len(filenames))
+	for _, file := range filenames {
+		Loadf("asset.Shader [%v]", file)
+		b, err := Load(file)
+		if err != nil {
+			return InvalidID, err
+		}
+
+		data = append(data, &ShaderData{
+			Code: preProcessFile(file, string(b)),
+			Type: getShaderType(file),
+		})
+	}
+	return loadShaderFromData(data...)
+}
+
+func loadShaderFromData(data ...*ShaderData) (uint32, error) {
+	pID := uint32(0)
+
+	shaders := make([]uint32, 0, len(data))
+	for _, d := range data {
+		code := preProcessFile("", d.Code)
+		id, err := compileShader(code, d.Type)
+		if err != nil {
+			Errorf("%v", err)
+			Infof("Full Shader Code:\n%v", addLineNumbers(code))
+			return 0, fmt.Errorf("Failed to compile shader")
+		}
+		shaders = append(shaders, id)
+	}
+
+	pID = gl.CreateProgram()
+	for _, id := range shaders {
+		gl.AttachShader(pID, id)
+	}
+	gl.LinkProgram(pID)
+
+	var status int32
+	gl.GetProgramiv(pID, gl.LINK_STATUS, &status)
+	if status == gl.FALSE {
+		var logLen int32
+		gl.GetProgramiv(pID, gl.INFO_LOG_LENGTH, &logLen)
+
+		log := strings.Repeat("\x00", int(logLen+1))
+		gl.GetProgramInfoLog(pID, logLen, nil, gl.Str(log))
+
+		return 0, fmt.Errorf("Failed to link program: %v", log)
+	}
+
+	for _, id := range shaders {
+		gl.DeleteShader(id)
+	}
+
+	return pID, nil
 }
 
 func getVersionString() string {
@@ -162,7 +210,7 @@ func getVersionString() string {
 }
 
 func preProcessFile(filename, code string) string {
-	code = preProcessCode(filename, code, GetShaderDefines())
+	code = preProcessCode(filepath.Dir(filename), code, GetShaderDefines())
 
 	// Prepend `#version`,
 	code = getVersionString() + "\n" + code
@@ -173,9 +221,7 @@ func preProcessFile(filename, code string) string {
 	return code
 }
 
-func preProcessCode(filename, code string, defines map[string]string) string {
-	dir := filepath.Dir(filename)
-
+func preProcessCode(dir, code string, defines map[string]string) string {
 	// Clean CRLF (windows)
 	code = strings.Replace(code, "\r", "", -1)
 
@@ -257,22 +303,8 @@ func preProcessCode(filename, code string, defines map[string]string) string {
 	return code
 }
 
-func compileShader(filename string) (uint32, error) {
-	filename = filepath.Clean(filename)
-
-	t := getShaderType(filename)
+func compileShader(code string, t uint32) (uint32, error) {
 	id := gl.CreateShader(t)
-
-	Loadf("asset.Shader [%v]", filename)
-	b, err := Load(filename)
-	if err != nil {
-		return InvalidID, err
-	}
-
-	code := preProcessFile(filename, string(b))
-
-	re := regexp.MustCompile(`\r`)
-	code = re.ReplaceAllString(code, "")
 
 	ccode, free := gl.Strs(code)
 	gl.ShaderSource(id, 1, ccode, nil)
@@ -288,9 +320,7 @@ func compileShader(filename string) (uint32, error) {
 		log := strings.Repeat("\x00", int(logLen+1))
 		gl.GetShaderInfoLog(id, logLen, nil, gl.Str(log))
 
-		Infof("Full Shader Code:\n%v", addLineNumbers(code))
-
-		return InvalidID, fmt.Errorf("Failed to compile [%v]: %v", filename, log)
+		return InvalidID, fmt.Errorf("Failed to compile shader: %v", log)
 	}
 
 	return id, nil

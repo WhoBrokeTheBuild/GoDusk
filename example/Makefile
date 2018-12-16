@@ -12,11 +12,10 @@ GOFLAGS ?=
 LDFLAGS ?= -X main.Build=$(shell git rev-parse --short HEAD)
 
 ifeq ($(CONFIG),debug)
-	ifneq ($(OS),Windows_NT)
-		# go-bindata -debug breaks on windows
-    	TAGS += debug
-	endif
+	# go-bindata -debug breaks on windows
+	TAGS += debug
 else 
+	TAGS += release
 	LDFLAGS += -s
 endif
 

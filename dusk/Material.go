@@ -37,22 +37,22 @@ const (
 	// TexCoordAttrID is the attribute ID of _TexCoord in GLSL
 	TexCoordAttrID uint32 = 2
 
-	AmbientMapFlag  uint32 = 1
-	DiffuseMapFlag  uint32 = 2
-	SpecularMapFlag uint32 = 4
-	NormalMapFlag   uint32 = 8
+	ambientMapFlag  uint32 = 1
+	diffuseMapFlag  uint32 = 2
+	specularMapFlag uint32 = 4
+	normalMapFlag   uint32 = 8
 )
 
 func init() {
-	RegisterShaderDefines(map[string]interface{}{
+	AddShaderDefines(map[string]interface{}{
 		"ATTR_POSITION": PositionAttrID,
 		"ATTR_NORMAL":   NormalAttrID,
 		"ATTR_TEXCOORD": TexCoordAttrID,
 
-		"FLAG_AMBIENT_MAP":  AmbientMapFlag,
-		"FLAG_DIFFUSE_MAP":  DiffuseMapFlag,
-		"FLAG_SPECULAR_MAP": SpecularMapFlag,
-		"FLAG_NORMAL_MAP":   NormalMapFlag,
+		"FLAG_AMBIENT_MAP":  ambientMapFlag,
+		"FLAG_DIFFUSE_MAP":  diffuseMapFlag,
+		"FLAG_SPECULAR_MAP": specularMapFlag,
+		"FLAG_NORMAL_MAP":   normalMapFlag,
 	})
 }
 
@@ -117,45 +117,45 @@ func (m *Material) Delete() {
 }
 
 // Bind sets all uniforms and textures used by this Material
-func (m *Material) Bind(s *Shader) {
+func (m *Material) Bind(s IShader) {
 	flags := uint32(0)
 
-	gl.Uniform4fv(s.GetUniformLocation("uAmbient"), 1, &m.Ambient[0])
-	gl.Uniform1i(s.GetUniformLocation("uAmbientMap"), 0)
+	gl.Uniform4fv(s.UniformLocation("uAmbient"), 1, &m.Ambient[0])
+	gl.Uniform1i(s.UniformLocation("uAmbientMap"), 0)
 	if m.AmbientMap != nil {
 		gl.ActiveTexture(gl.TEXTURE0)
 		m.AmbientMap.Bind()
 
-		flags |= AmbientMapFlag
+		flags |= ambientMapFlag
 	}
 
-	gl.Uniform4fv(s.GetUniformLocation("uDiffuse"), 1, &m.Diffuse[0])
-	gl.Uniform1i(s.GetUniformLocation("uDiffuseMap"), 1)
+	gl.Uniform4fv(s.UniformLocation("uDiffuse"), 1, &m.Diffuse[0])
+	gl.Uniform1i(s.UniformLocation("uDiffuseMap"), 1)
 	if m.DiffuseMap != nil {
 		gl.ActiveTexture(gl.TEXTURE1)
 		m.DiffuseMap.Bind()
 
-		flags |= DiffuseMapFlag
+		flags |= diffuseMapFlag
 	}
 
-	gl.Uniform4fv(s.GetUniformLocation("uSpecular"), 1, &m.Specular[0])
-	gl.Uniform1i(s.GetUniformLocation("uSpecularMap"), 2)
+	gl.Uniform4fv(s.UniformLocation("uSpecular"), 1, &m.Specular[0])
+	gl.Uniform1i(s.UniformLocation("uSpecularMap"), 2)
 	if m.SpecularMap != nil {
 		gl.ActiveTexture(gl.TEXTURE2)
 		m.SpecularMap.Bind()
 
-		flags |= SpecularMapFlag
+		flags |= specularMapFlag
 	}
 
-	gl.Uniform1i(s.GetUniformLocation("uNormalMap"), 3)
+	gl.Uniform1i(s.UniformLocation("uNormalMap"), 3)
 	if m.NormalMap != nil {
 		gl.ActiveTexture(gl.TEXTURE3)
 		m.NormalMap.Bind()
 
-		flags |= NormalMapFlag
+		flags |= normalMapFlag
 	}
 
-	gl.Uniform1ui(s.GetUniformLocation("uMapFlags"), flags)
+	gl.Uniform1ui(s.UniformLocation("uMapFlags"), flags)
 }
 
 // UnBind resets the bindings used in Bind()

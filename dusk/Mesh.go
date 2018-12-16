@@ -46,7 +46,7 @@ type Mesh struct {
 }
 
 type meshGroup struct {
-	name string
+	name     string
 	material *Material
 	vao      uint32
 	vbo      uint32
@@ -257,7 +257,7 @@ func (m *Mesh) UpdateData(data ...*MeshData) error {
 }
 
 // Render renders a Mesh to the screen
-func (m *Mesh) Render(s *Shader) {
+func (m *Mesh) Render(s IShader) {
 	for _, g := range m.groups {
 		if g.material != nil {
 			g.material.Bind(s)

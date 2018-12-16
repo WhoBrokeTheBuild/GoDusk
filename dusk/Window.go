@@ -35,8 +35,8 @@ func DefaultWindowOptions() *WindowOptions {
 }
 
 type ResizeFunc func(int, int)
-type KeyFunc func(glfw.Key, glfw.Action)
-type MouseFunc func(glfw.MouseButton, glfw.Action)
+type KeyFunc func(Key, InputAction)
+type MouseFunc func(MouseButton, InputAction)
 type MouseMoveFunc func(mgl32.Vec2)
 
 // Window represents a Window
@@ -92,13 +92,13 @@ func NewWindow(opts *WindowOptions) (w *Window, err error) {
 
 	w.glfwWindow.SetKeyCallback(func(_ *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		for _, f := range w.keyFuncs {
-			f(key, action)
+			f(Key(key), InputAction(action))
 		}
 	})
 
 	w.glfwWindow.SetMouseButtonCallback(func(_ *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
 		for _, f := range w.mouseFuncs {
-			f(button, action)
+			f(MouseButton(button), InputAction(action))
 		}
 	})
 

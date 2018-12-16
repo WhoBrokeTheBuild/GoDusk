@@ -6,5 +6,4 @@ import "github.com/go-gl/mathgl/mgl32"
 type RenderContext struct {
 	Projection mgl32.Mat4
 	Camera     *Camera
-	Shader     *Shader
 }

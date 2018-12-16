@@ -1,3 +1,5 @@
-*.gen.go
+#*.gen.go
+*-release.gen.go
 *.exe
 example/example
+/models

@@ -127,9 +127,9 @@ func (c *UIImage) updateMesh() {
 
 // Draw renders the UIImage to the buffer
 func (c *UIImage) Draw(ctx *RenderContext) {
-	s := ctx.Shader
+	s := GetUIShader()
 
-	gl.Uniform1i(s.GetUniformLocation("uTexture"), 0)
+	gl.Uniform1i(s.UniformLocation("uTexture"), 0)
 
 	gl.ActiveTexture(gl.TEXTURE0)
 	if c.Texture != nil {
