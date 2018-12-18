@@ -10,24 +10,22 @@ const (
 #include <mvp.inc.glsl>
 #include <attribute.inc.glsl>
 
-uniform vec3 uCamera;
-
 out vec4 p_Position;
 out vec4 p_Normal;
 out vec2 p_TexCoord;
 
-out vec3 p_LightDir;
-out vec3 p_ViewDir;
+out vec4 p_LightDir;
+out vec4 p_ViewDir;
 
 void main() {
     p_Position = uModel * vec4(_Position, 1.0);
     p_Normal   = uModel * vec4(_Normal, 1.0);
-    p_TexCoord = vec2(_TexCoord.x, 1.0 - _TexCoord.y);
+	p_TexCoord = vec2(_TexCoord.x, 1.0 - _TexCoord.y);
+	
+	p_LightDir = normalize(-vec4(-0.2, -1.0, -0.3, 0.0));
+	p_ViewDir = -(uView * p_Position);
 
-    p_LightDir = normalize(vec3(1000, 1000, 1000) - p_Position.xyz);
-    p_ViewDir  = normalize(uCamera - p_Position.xyz);
-
-    gl_Position = uProjection * uView * uModel * vec4(_Position, 1);
+    gl_Position = uMVP * vec4(_Position, 1);
 }
 `
 	defaultShaderFrag = `
@@ -37,8 +35,8 @@ in vec4 p_Position;
 in vec4 p_Normal;
 in vec2 p_TexCoord;
 
-in vec3 p_LightDir;
-in vec3 p_ViewDir;
+in vec4 p_LightDir;
+in vec4 p_ViewDir;
 
 out vec4 _Color;
 
@@ -54,7 +52,7 @@ void main() {
     }
     ambient *= 0.1;
 
-    float diff = max(0.0, dot(normal.xyz, p_LightDir));
+    float diff = max(0.0, dot(normal.xyz, p_LightDir.xyz));
 
     vec4 diffuse = uDiffuse;
     if (HasDiffuseMap()) {
@@ -62,8 +60,7 @@ void main() {
     }
     diffuse = vec4(diff * vec3(diffuse.rgb), diffuse.a);
 
-    vec3  half = normalize(p_LightDir + p_ViewDir);
-    float spec = pow(max(0.0, dot(normal.xyz, half)), 32.0);
+    float spec = pow(max(0.0, dot(normal.xyz, p_LightDir.xyz)), 32.0);
 
     vec4 specular = uSpecular;
     if (HasSpecularMap()) {
@@ -110,8 +107,12 @@ func (s *DefaultShader) Bind(ctx *RenderContext, data interface{}) {
 		model = data.(mgl32.Mat4)
 	}
 
+	mvp := ctx.Projection.
+		Mul4(ctx.Camera.View).
+		Mul4(model)
+
 	gl.UniformMatrix4fv(s.UniformLocation("uProjection"), 1, false, &ctx.Projection[0])
 	gl.UniformMatrix4fv(s.UniformLocation("uView"), 1, false, &ctx.Camera.View[0])
 	gl.UniformMatrix4fv(s.UniformLocation("uModel"), 1, false, &model[0])
-	gl.Uniform4fv(s.UniformLocation("uCamera"), 1, &ctx.Camera.Position[0])
+	gl.UniformMatrix4fv(s.UniformLocation("uMVP"), 1, false, &mvp[0])
 }

@@ -8,6 +8,8 @@ type IActor interface {
 	Transform() *Transform
 	SetTransform(*Transform)
 
+	RigidBody() *RigidBody
+
 	Shader() IShader
 	SetShader(IShader)
 
@@ -18,6 +20,7 @@ type IActor interface {
 // Actor is an object with a Transform
 type Actor struct {
 	transform *Transform
+	rigidBody *RigidBody
 	meshes    []*Mesh
 	shader    IShader
 }
@@ -34,6 +37,7 @@ func (a *Actor) Init() {
 	a.Delete()
 
 	a.transform = NewTransform()
+	a.rigidBody = nil
 	a.meshes = []*Mesh{}
 	a.shader = GetDefaultShader()
 }
@@ -46,6 +50,11 @@ func (a *Actor) Transform() *Transform {
 // SetTransform sets the current transform
 func (a *Actor) SetTransform(t *Transform) {
 	a.transform = t
+}
+
+// RigidBody returns the current rigid body
+func (a *Actor) RigidBody() *RigidBody {
+	return a.rigidBody
 }
 
 // Shader returns the current shader
@@ -70,7 +79,12 @@ func (a *Actor) Delete() {
 }
 
 // Update fulfills the IActor interface
-func (a *Actor) Update(ctx *UpdateContext) {}
+func (a *Actor) Update(ctx *UpdateContext) {
+	rb := a.RigidBody()
+	if rb != nil {
+		rb.Update(ctx)
+	}
+}
 
 // Render renders a Actor to the screen
 func (a *Actor) Render(ctx *RenderContext) {

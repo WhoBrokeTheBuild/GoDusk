@@ -28,7 +28,7 @@ type RenderFunc func(*RenderContext)
 type App struct {
 	Window *Window
 	UI     *UI
-	Scene  *Scene
+	Scene  IScene
 
 	defaultCamera *Camera
 

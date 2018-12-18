@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 	"path/filepath"
 	"strings"
 
 	"github.com/WhoBrokeTheBuild/GoDusk/dusk"
+	"github.com/WhoBrokeTheBuild/GoDusk/m32"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -850,13 +850,13 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 					float32(verts[ind+2]),
 				}
 				if rotation[0] != 0 {
-					v = mgl32.TransformCoordinate(v, mgl32.HomogRotate3DX(rotation[0]*(-180.0/math.Pi)))
+					v = mgl32.TransformCoordinate(v, mgl32.HomogRotate3DX(rotation[0]*(-180.0/m32.Pi)))
 				}
 				if rotation[1] != 0 {
-					v = mgl32.TransformCoordinate(v, mgl32.HomogRotate3DY(rotation[1]*(-180.0/math.Pi)))
+					v = mgl32.TransformCoordinate(v, mgl32.HomogRotate3DY(rotation[1]*(-180.0/m32.Pi)))
 				}
 				if rotation[2] != 0 {
-					v = mgl32.TransformCoordinate(v, mgl32.HomogRotate3DZ(rotation[2]*(-180.0/math.Pi)))
+					v = mgl32.TransformCoordinate(v, mgl32.HomogRotate3DZ(rotation[2]*(-180.0/m32.Pi)))
 				}
 				if !scale.ApproxEqual(mgl32.Vec3{1, 1, 1}) {
 					v = mgl32.TransformCoordinate(v, mgl32.Scale3D(scale[0], scale[1], scale[2]))
@@ -875,13 +875,13 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 								float32(norms[ind+2]),
 							}
 							if rotation[0] != 0 {
-								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DX(rotation[0]*(-180.0/math.Pi)))
+								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DX(rotation[0]*(-180.0/m32.Pi)))
 							}
 							if rotation[1] != 0 {
-								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DY(rotation[1]*(-180.0/math.Pi)))
+								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DY(rotation[1]*(-180.0/m32.Pi)))
 							}
 							if rotation[2] != 0 {
-								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DZ(rotation[2]*(-180.0/math.Pi)))
+								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DZ(rotation[2]*(-180.0/m32.Pi)))
 							}
 							d.Normals = append(d.Normals, n)
 						}
@@ -894,13 +894,13 @@ func Load(filename string) (data []*dusk.MeshData, err error) {
 								float32(norms[ind+2]),
 							}
 							if rotation[0] != 0 {
-								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DX(rotation[0]*(-180.0/math.Pi)))
+								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DX(rotation[0]*(-180.0/m32.Pi)))
 							}
 							if rotation[1] != 0 {
-								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DY(rotation[1]*(-180.0/math.Pi)))
+								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DY(rotation[1]*(-180.0/m32.Pi)))
 							}
 							if rotation[2] != 0 {
-								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DZ(rotation[2]*(-180.0/math.Pi)))
+								n = mgl32.TransformNormal(n, mgl32.HomogRotate3DZ(rotation[2]*(-180.0/m32.Pi)))
 							}
 							d.Normals = append(d.Normals, n)
 						}

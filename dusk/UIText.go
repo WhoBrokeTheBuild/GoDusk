@@ -89,7 +89,7 @@ func (c *UIText) updateUITexture() {
 	}
 
 	m := d.MeasureString(c.Text)
-	buffer := image.NewRGBA(image.Rect(0, 0, m.Ceil(), int(c.Size)))
+	buffer := image.NewRGBA(image.Rect(0, 0, m.Ceil(), int(c.Size*1.5)))
 
 	d.Dst = buffer
 	d.DrawString(c.Text)

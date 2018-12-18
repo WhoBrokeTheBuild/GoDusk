@@ -2,10 +2,10 @@ package dusk
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 
+	"github.com/WhoBrokeTheBuild/GoDusk/m32"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -48,10 +48,21 @@ func update2DMesh(mesh *Mesh, dst, src mgl32.Vec4) error {
 
 func addLineNumbers(code string) string {
 	lines := strings.Split(code, "\n")
-	w := int(math.Log10(float64(len(lines)))) + 1
+	w := int(m32.Log10(float32(len(lines)))) + 1
 	f := "%" + strconv.Itoa(w) + "v: %v"
 	for i := range lines {
 		lines[i] = fmt.Sprintf(f, i+1, lines[i])
 	}
 	return strings.Join(lines, "\n")
+}
+
+// DistanceSquared returns the squared distance between two points
+func DistanceSquared(p1, p2 mgl32.Vec3) float32 {
+	tmp := p2.Sub(p1)
+	return tmp.Dot(tmp)
+}
+
+// Distance returns the distance between two points
+func Distance(p1, p2 mgl32.Vec3) float32 {
+	return m32.Sqrt(DistanceSquared(p1, p2))
 }
