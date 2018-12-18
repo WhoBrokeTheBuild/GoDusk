@@ -26,7 +26,6 @@ install:
   - true
 
 script:
-  - export GO111MODULE=on
   - go generate ./...
   - go get ./...
   - cd example
