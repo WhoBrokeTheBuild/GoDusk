@@ -6,7 +6,9 @@ GoDusk relies on `go-bindata`, which can be automatically run with `go generate`
 After pulling, run the following:
 
 ```
+go get -u github.com/shuLhan/go-bindata/...
 go generate ./...
+go get ./...
 ```
 
 Then you can build and use the library normally.
