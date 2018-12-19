@@ -30,7 +30,14 @@ type UIText struct {
 }
 
 // NewUIText returns a new UIText from a given string, font, font size, and color
-func NewUIText(text string, font string, size float64, color color.Color) *UIText {
+func NewUIText(layer ILayer, text string, font string, size float64, color color.Color) *UIText {
+	c := &UIText{}
+	c.InitEx(layer, text, font, size, color)
+	c.updateUITexture()
+	return c
+}
+
+func (c *UIText) InitEx(layer ILayer, text string, font string, size float64, color color.Color) {
 	var f *truetype.Font
 
 	font = filepath.Clean(font)
@@ -42,26 +49,23 @@ func NewUIText(text string, font string, size float64, color color.Color) *UITex
 		b, err := Load(font)
 		if err != nil {
 			Errorf("%v", err)
-			return nil
+			return
 		}
 
 		f, err = freetype.ParseFont(b)
 		if err != nil {
 			Errorf("%v", err)
-			return nil
+			return
 		}
 		_fonts[font] = f
 	}
 
-	c := &UIText{
-		Text:  text,
-		Size:  size,
-		Color: color,
-		Font:  f,
-	}
+	c.Text = text
+	c.Size = size
+	c.Color = color
+	c.Font = f
+	c.Init(layer)
 	c.updateUITexture()
-
-	return c
 }
 
 // SetText sets the text to be rendered

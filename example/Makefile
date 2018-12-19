@@ -1,12 +1,12 @@
 CONFIG ?= debug
 TAGS   ?=
 
-TARGET := example
+TARGET := example.bin
 ifeq ($(OS),Windows_NT)
 	TARGET := example.exe
 endif
 
-SOURCE ?= $(wildcard ../dusk/*.go ../dusk/obj/*.go ../dusk/fbx/*.go *.go)
+SOURCE ?= $(wildcard ../dusk/*.go ../dusk/*/*.go *.go)
 
 GOFLAGS ?= 
 LDFLAGS ?= -X main.Build=$(shell git rev-parse --short HEAD)

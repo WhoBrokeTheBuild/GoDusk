@@ -40,6 +40,7 @@ func GetUIShader() *UIShader {
 	if _uiShader != nil {
 		return _uiShader
 	}
+	Loadf("Loading UI Shader")
 	_uiShader = &UIShader{}
 	_uiShader.InitFromData(
 		&ShaderData{

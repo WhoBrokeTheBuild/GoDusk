@@ -41,7 +41,7 @@ type asset struct {
 
 // bindataDataFontsDefaultttf reads file data from disk. It returns an error on failure.
 func bindataDataFontsDefaultttf() (*asset, error) {
-	path := "/opt/repos/GoDusk/dusk/data/fonts/default.ttf"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/dusk/data/fonts/default.ttf"
 	name := "data/fonts/default.ttf"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -59,7 +59,7 @@ func bindataDataFontsDefaultttf() (*asset, error) {
 
 // bindataDataModelsCubemtl reads file data from disk. It returns an error on failure.
 func bindataDataModelsCubemtl() (*asset, error) {
-	path := "/opt/repos/GoDusk/dusk/data/models/cube.mtl"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/dusk/data/models/cube.mtl"
 	name := "data/models/cube.mtl"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -77,7 +77,7 @@ func bindataDataModelsCubemtl() (*asset, error) {
 
 // bindataDataModelsCubeobj reads file data from disk. It returns an error on failure.
 func bindataDataModelsCubeobj() (*asset, error) {
-	path := "/opt/repos/GoDusk/dusk/data/models/cube.obj"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/dusk/data/models/cube.obj"
 	name := "data/models/cube.obj"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -95,7 +95,7 @@ func bindataDataModelsCubeobj() (*asset, error) {
 
 // bindataDataModelsMonkeymtl reads file data from disk. It returns an error on failure.
 func bindataDataModelsMonkeymtl() (*asset, error) {
-	path := "/opt/repos/GoDusk/dusk/data/models/monkey.mtl"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/dusk/data/models/monkey.mtl"
 	name := "data/models/monkey.mtl"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -113,7 +113,7 @@ func bindataDataModelsMonkeymtl() (*asset, error) {
 
 // bindataDataModelsMonkeyobj reads file data from disk. It returns an error on failure.
 func bindataDataModelsMonkeyobj() (*asset, error) {
-	path := "/opt/repos/GoDusk/dusk/data/models/monkey.obj"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/dusk/data/models/monkey.obj"
 	name := "data/models/monkey.obj"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -131,7 +131,7 @@ func bindataDataModelsMonkeyobj() (*asset, error) {
 
 // bindataDataModelsTorusmtl reads file data from disk. It returns an error on failure.
 func bindataDataModelsTorusmtl() (*asset, error) {
-	path := "/opt/repos/GoDusk/dusk/data/models/torus.mtl"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/dusk/data/models/torus.mtl"
 	name := "data/models/torus.mtl"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -149,7 +149,7 @@ func bindataDataModelsTorusmtl() (*asset, error) {
 
 // bindataDataModelsTorusobj reads file data from disk. It returns an error on failure.
 func bindataDataModelsTorusobj() (*asset, error) {
-	path := "/opt/repos/GoDusk/dusk/data/models/torus.obj"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/dusk/data/models/torus.obj"
 	name := "data/models/torus.obj"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -167,7 +167,7 @@ func bindataDataModelsTorusobj() (*asset, error) {
 
 // bindataDataModelsUvspheremtl reads file data from disk. It returns an error on failure.
 func bindataDataModelsUvspheremtl() (*asset, error) {
-	path := "/opt/repos/GoDusk/dusk/data/models/uvsphere.mtl"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/dusk/data/models/uvsphere.mtl"
 	name := "data/models/uvsphere.mtl"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -185,7 +185,7 @@ func bindataDataModelsUvspheremtl() (*asset, error) {
 
 // bindataDataModelsUvsphereobj reads file data from disk. It returns an error on failure.
 func bindataDataModelsUvsphereobj() (*asset, error) {
-	path := "/opt/repos/GoDusk/dusk/data/models/uvsphere.obj"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/dusk/data/models/uvsphere.obj"
 	name := "data/models/uvsphere.obj"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -203,7 +203,7 @@ func bindataDataModelsUvsphereobj() (*asset, error) {
 
 // bindataDataShadersIncludeAttributeincglsl reads file data from disk. It returns an error on failure.
 func bindataDataShadersIncludeAttributeincglsl() (*asset, error) {
-	path := "/opt/repos/GoDusk/dusk/data/shaders/include/attribute.inc.glsl"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/dusk/data/shaders/include/attribute.inc.glsl"
 	name := "data/shaders/include/attribute.inc.glsl"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -221,7 +221,7 @@ func bindataDataShadersIncludeAttributeincglsl() (*asset, error) {
 
 // bindataDataShadersIncludeMaterialincglsl reads file data from disk. It returns an error on failure.
 func bindataDataShadersIncludeMaterialincglsl() (*asset, error) {
-	path := "/opt/repos/GoDusk/dusk/data/shaders/include/material.inc.glsl"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/dusk/data/shaders/include/material.inc.glsl"
 	name := "data/shaders/include/material.inc.glsl"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -239,7 +239,7 @@ func bindataDataShadersIncludeMaterialincglsl() (*asset, error) {
 
 // bindataDataShadersIncludeMvpincglsl reads file data from disk. It returns an error on failure.
 func bindataDataShadersIncludeMvpincglsl() (*asset, error) {
-	path := "/opt/repos/GoDusk/dusk/data/shaders/include/mvp.inc.glsl"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/dusk/data/shaders/include/mvp.inc.glsl"
 	name := "data/shaders/include/mvp.inc.glsl"
 	bytes, err := bindataRead(path, name)
 	if err != nil {

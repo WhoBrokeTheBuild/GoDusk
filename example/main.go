@@ -18,21 +18,49 @@ import (
 // Build is a build identifier, generally the Git Short
 var Build = ""
 
-type demoActor struct {
-	dusk.Actor
+type demoEntity struct {
+	dusk.Entity
 }
 
-func newDemoActor() *demoActor {
-	a := &demoActor{}
-	a.Init()
-	return a
+func newDemoEntity(layer dusk.ILayer) *demoEntity {
+	e := &demoEntity{}
+	e.Init(layer)
+	return e
 }
 
-func (a *demoActor) Update(ctx *dusk.UpdateContext) {
-	a.Actor.Update(ctx)
+func (e *demoEntity) Update(ctx *dusk.UpdateContext) {
+	e.Entity.Update(ctx)
 
-	a.Transform().Rotation[1] += ctx.DeltaTime * 0.01
-	a.Transform().Rotation[1] = float32(m32.Mod(a.Transform().Rotation[1], m32.Pi*2.0))
+	e.Transform().Rotation[1] += ctx.DeltaTime * 0.01
+	e.Transform().Rotation[1] = float32(m32.Mod(e.Transform().Rotation[1], m32.Pi*2.0))
+}
+
+type fpsDisplay struct {
+	dusk.UIText
+	lastFPS int
+}
+
+func newFPSDisplay(layer dusk.ILayer, font string, size float64, color color.Color) *fpsDisplay {
+	e := &fpsDisplay{
+		lastFPS: 0,
+	}
+	e.InitEx(layer, "FPS 00", font, size, color)
+	return e
+}
+
+func (e *fpsDisplay) Update(ctx *dusk.UpdateContext) {
+	if e.lastFPS != ctx.FPS {
+		e.lastFPS = ctx.FPS
+
+		if ctx.FPS < 30 {
+			e.Color = color.RGBA{255, 0, 0, 255}
+		} else if ctx.FPS < 60 {
+			e.Color = color.RGBA{255, 255, 0, 255}
+		} else {
+			e.Color = color.RGBA{0, 255, 0, 255}
+		}
+		e.SetText(fmt.Sprintf("FPS %d", ctx.FPS))
+	}
 }
 
 func main() {
@@ -45,26 +73,34 @@ func main() {
 		panic(err)
 	}
 
-	app.UI.AddElement(dusk.NewUIImageFromFile("data/ui/menubar.png"))
+	layer := dusk.NewLayer()
+	app.AddLayer(layer)
+	defer layer.Delete()
 
-	menu := dusk.NewUIText(fmt.Sprintf("GoDusk Example v%s %s", dusk.Version, Build), "data/fonts/default.ttf", 18.0, color.White)
-	menu.SetPosition(mgl32.Vec2{10, 5})
-	app.UI.AddElement(menu)
+	entity := newDemoEntity(layer)
+	layer.AddEntity(entity)
+	defer entity.Delete()
 
-	fps := dusk.NewUIText("FPS 00", "data/fonts/default.ttf", 18.0, color.White)
-	fps.SetPosition(mgl32.Vec2{float32(app.Window.Width) - 60, 5})
-	app.UI.AddElement(fps)
-
-	actor := newDemoActor()
-	defer actor.Delete()
-	app.Scene.AddActor(actor)
-
-	mesh, err := dusk.NewMeshFromFile("data/models/teapot.obj")
+	model, err := dusk.NewModelFromFile(entity, "data/models/teapot.obj")
 	if err != nil {
 		panic(err)
 	}
-	defer mesh.Delete()
-	actor.AddMesh(mesh)
+	defer model.Delete()
+	entity.AddComponent(model)
+
+	ui, err := dusk.NewUILayer(app)
+	app.AddLayer(ui)
+	defer ui.Delete()
+
+	ui.AddEntity(dusk.NewUIImageFromFile(ui, "data/ui/menubar.png"))
+
+	menu := dusk.NewUIText(ui, fmt.Sprintf("GoDusk Example v%s %s", dusk.Version, Build), "data/fonts/default.ttf", 18.0, color.White)
+	menu.SetPosition(mgl32.Vec2{10, 5})
+	ui.AddEntity(menu)
+
+	fps := newFPSDisplay(ui, "data/fonts/default.ttf", 18.0, color.White)
+	fps.SetPosition(mgl32.Vec2{float32(app.Window.Width) - 60, 5})
+	ui.AddEntity(fps)
 
 	//mPos := mgl32.Vec2{}
 	mouseDown := false
@@ -91,28 +127,28 @@ func main() {
 
 	//app.Window.RegisterKeyFunc(func(key dusk.Key, action dusk.InputAction) { })
 
-	lastFPS := 0
-	app.RegisterUpdateFunc(func(ctx *dusk.UpdateContext) {
-		if lastFPS != ctx.FPS {
-			lastFPS = ctx.FPS
+	//lastFPS := 0
+	//app.RegisterUpdateFunc(func(ctx *dusk.UpdateContext) {
+	// if lastFPS != ctx.FPS {
+	// 	lastFPS = ctx.FPS
 
-			if ctx.FPS < 30 {
-				fps.Color = color.RGBA{255, 0, 0, 255}
-			} else if ctx.FPS < 60 {
-				fps.Color = color.RGBA{255, 255, 0, 255}
-			} else {
-				fps.Color = color.RGBA{0, 255, 0, 255}
-			}
-			fps.SetText(fmt.Sprintf("FPS %d", ctx.FPS))
-		}
+	// 	if ctx.FPS < 30 {
+	// 		fps.Color = color.RGBA{255, 0, 0, 255}
+	// 	} else if ctx.FPS < 60 {
+	// 		fps.Color = color.RGBA{255, 255, 0, 255}
+	// 	} else {
+	// 		fps.Color = color.RGBA{0, 255, 0, 255}
+	// 	}
+	// 	fps.SetText(fmt.Sprintf("FPS %d", ctx.FPS))
+	// }
 
-		//camDir := mgl32.Vec3{
-		//	float32(m32.Cos(verticalAngle) * m32.Sin(horizontalAngle)),
-		//	float32(m32.Sin(verticalAngle)),
-		//	float32(m32.Cos(verticalAngle) * m32.Cos(horizontalAngle)),
-		//}
-		//cam.SetLookAt(cam.Position.Add(camDir))
-	})
+	//camDir := mgl32.Vec3{
+	//	float32(m32.Cos(verticalAngle) * m32.Sin(horizontalAngle)),
+	//	float32(m32.Sin(verticalAngle)),
+	//	float32(m32.Cos(verticalAngle) * m32.Cos(horizontalAngle)),
+	//}
+	//cam.SetLookAt(cam.Position.Add(camDir))
+	//})
 
 	app.Run()
 }

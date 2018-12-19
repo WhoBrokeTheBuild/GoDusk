@@ -85,6 +85,7 @@ func GetDefaultShader() *DefaultShader {
 	if _defaultShader != nil {
 		return _defaultShader
 	}
+	Loadf("Loading Default hader")
 	_defaultShader = &DefaultShader{}
 	_defaultShader.InitFromData(
 		&ShaderData{

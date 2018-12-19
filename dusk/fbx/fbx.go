@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	dusk.RegisterMeshFormat("fbx", []string{".fbx"}, Load)
+	dusk.RegisterModelFormat("fbx", []string{".fbx"}, Load)
 }
 
 const (

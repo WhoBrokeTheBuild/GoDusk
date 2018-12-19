@@ -33,7 +33,7 @@ type asset struct {
 
 // bindataDataModelsTeapotfbx reads file data from disk. It returns an error on failure.
 func bindataDataModelsTeapotfbx() (*asset, error) {
-	path := "/opt/repos/GoDusk/demos/MeshLoading/data/models/teapot.fbx"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/demos/MeshLoading/data/models/teapot.fbx"
 	name := "data/models/teapot.fbx"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -51,7 +51,7 @@ func bindataDataModelsTeapotfbx() (*asset, error) {
 
 // bindataDataModelsTeapotmtl reads file data from disk. It returns an error on failure.
 func bindataDataModelsTeapotmtl() (*asset, error) {
-	path := "/opt/repos/GoDusk/demos/MeshLoading/data/models/teapot.mtl"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/demos/MeshLoading/data/models/teapot.mtl"
 	name := "data/models/teapot.mtl"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -69,7 +69,7 @@ func bindataDataModelsTeapotmtl() (*asset, error) {
 
 // bindataDataModelsTeapotobj reads file data from disk. It returns an error on failure.
 func bindataDataModelsTeapotobj() (*asset, error) {
-	path := "/opt/repos/GoDusk/demos/MeshLoading/data/models/teapot.obj"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/demos/MeshLoading/data/models/teapot.obj"
 	name := "data/models/teapot.obj"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
@@ -87,7 +87,7 @@ func bindataDataModelsTeapotobj() (*asset, error) {
 
 // bindataDataModelsTeapotpng reads file data from disk. It returns an error on failure.
 func bindataDataModelsTeapotpng() (*asset, error) {
-	path := "/opt/repos/GoDusk/demos/MeshLoading/data/models/teapot.png"
+	path := "/home/stephen/go/src/github.com/WhoBrokeTheBuild/GoDusk/demos/MeshLoading/data/models/teapot.png"
 	name := "data/models/teapot.png"
 	bytes, err := bindataRead(path, name)
 	if err != nil {

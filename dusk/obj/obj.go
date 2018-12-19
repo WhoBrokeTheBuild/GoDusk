@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	dusk.RegisterMeshFormat("obj", []string{".obj"}, Load)
+	dusk.RegisterModelFormat("obj", []string{".obj"}, Load)
 }
 
 // Load parses and returns the data from the file

@@ -14,21 +14,21 @@ import (
 	"github.com/WhoBrokeTheBuild/GoDusk/m32"
 )
 
-type demoActor struct {
-	dusk.Actor
+type demoEntity struct {
+	dusk.Entity
 }
 
-func newDemoActor() *demoActor {
-	a := &demoActor{}
-	a.Init()
-	return a
+func newDemoEntity(layer dusk.ILayer) *demoEntity {
+	e := &demoEntity{}
+	e.Init(layer)
+	return e
 }
 
-func (a *demoActor) Update(ctx *dusk.UpdateContext) {
-	a.Actor.Update(ctx)
+func (e *demoEntity) Update(ctx *dusk.UpdateContext) {
+	e.Entity.Update(ctx)
 
-	a.Transform().Rotation[1] += ctx.DeltaTime * 0.01
-	a.Transform().Rotation[1] = float32(m32.Mod(a.Transform().Rotation[1], m32.Pi*2.0))
+	e.Transform().Rotation[1] += ctx.DeltaTime * 0.01
+	e.Transform().Rotation[1] = float32(m32.Mod(e.Transform().Rotation[1], m32.Pi*2.0))
 }
 
 func main() {
@@ -41,37 +41,45 @@ func main() {
 		panic(err)
 	}
 
-	fbxActor := newDemoActor()
-	defer fbxActor.Delete()
-	fbxActor.Transform().Position = mgl32.Vec3{2, 0, 0}
-	app.Scene.AddActor(fbxActor)
+	layer := dusk.NewLayer()
+	app.AddLayer(layer)
+	defer layer.Delete()
 
-	fbxMesh, err := dusk.NewMeshFromFile("data/models/teapot.fbx")
+	ui, err := dusk.NewUILayer(app)
+	app.AddLayer(ui)
+	defer ui.Delete()
+
+	fbxEntity := newDemoEntity(layer)
+	fbxEntity.Transform().Position = mgl32.Vec3{2, 0, 0}
+	layer.AddEntity(fbxEntity)
+	defer fbxEntity.Delete()
+
+	fbxModel, err := dusk.NewModelFromFile(fbxEntity, "data/models/teapot.fbx")
 	if err != nil {
 		panic(err)
 	}
-	defer fbxMesh.Delete()
-	fbxActor.AddMesh(fbxMesh)
+	defer fbxModel.Delete()
+	fbxEntity.AddComponent(fbxModel)
 
-	fbxLabel := dusk.NewUIText("teapot.fbx", "data/fonts/default.ttf", 26.0, color.Black)
+	fbxLabel := dusk.NewUIText(ui, "teapot.fbx", "data/fonts/default.ttf", 26.0, color.Black)
 	fbxLabel.SetPosition(mgl32.Vec2{700, 500})
-	app.UI.AddElement(fbxLabel)
+	ui.AddEntity(fbxLabel)
 
-	objActor := newDemoActor()
-	defer objActor.Delete()
-	objActor.Transform().Position = mgl32.Vec3{0, 0, 2}
-	app.Scene.AddActor(objActor)
+	objEntity := newDemoEntity(layer)
+	objEntity.Transform().Position = mgl32.Vec3{0, 0, 2}
+	layer.AddEntity(objEntity)
+	defer objEntity.Delete()
 
-	objMesh, err := dusk.NewMeshFromFile("data/models/teapot.obj")
+	objModel, err := dusk.NewModelFromFile(objEntity, "data/models/teapot.obj")
 	if err != nil {
 		panic(err)
 	}
-	defer objMesh.Delete()
-	objActor.AddMesh(objMesh)
+	defer objModel.Delete()
+	objEntity.AddComponent(objModel)
 
-	objLabel := dusk.NewUIText("teapot.obj", "data/fonts/default.ttf", 26.0, color.Black)
+	objLabel := dusk.NewUIText(ui, "teapot.obj", "data/fonts/default.ttf", 26.0, color.Black)
 	objLabel.SetPosition(mgl32.Vec2{200, 500})
-	app.UI.AddElement(objLabel)
+	ui.AddEntity(objLabel)
 
 	cam := app.GetRenderContext().Camera
 	cam.SetPosition(mgl32.Vec3{4, 4, 4})

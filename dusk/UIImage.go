@@ -14,15 +14,17 @@ import (
 
 // UIImage is a UIElement that draws an image to the screen
 type UIImage struct {
-	BaseUIElement
+	Entity
 	Bounds  mgl32.Vec4
 	Texture *Texture
 	Mesh    *Mesh
 }
 
 // NewUIImageFromFile returns a new UIImage from the given file
-func NewUIImageFromFile(filename string) *UIImage {
+func NewUIImageFromFile(layer ILayer, filename string) *UIImage {
 	c := &UIImage{}
+	c.Init(layer)
+
 	err := c.LoadFromFile(filename)
 	if err != nil {
 		c.Delete()
@@ -33,8 +35,9 @@ func NewUIImageFromFile(filename string) *UIImage {
 }
 
 // NewUIImageFromData returns a new UIImage from the given data, width, and height
-func NewUIImageFromData(data []uint8, intFormat uint32, format int32, width, height int) *UIImage {
+func NewUIImageFromData(layer ILayer, data []uint8, intFormat uint32, format int32, width, height int) *UIImage {
 	c := &UIImage{}
+	c.Init(layer)
 	err := c.LoadFromData(data, intFormat, format, width, height)
 	if err != nil {
 		c.Delete()
@@ -86,20 +89,20 @@ func (c *UIImage) LoadFromData(data []uint8, intFormat uint32, format int32, wid
 
 // SetPosition sets the UIImage's position
 func (c *UIImage) SetPosition(pos mgl32.Vec2) {
-	c.BaseUIElement.SetPosition(pos)
+	c.Transform().Position = mgl32.Vec3{pos.X(), pos.Y(), 0.0}
 	c.updateMesh()
 }
 
 // SetSize sets the UIImage's size
 func (c *UIImage) SetSize(size mgl32.Vec2) {
-	c.BaseUIElement.SetSize(size)
+	c.Transform().Scale = mgl32.Vec3{size.X(), size.Y(), 0.0}
 	c.updateMesh()
 }
 
 func (c *UIImage) updateMesh() {
 	var err error
-	pos := c.GetPosition()
-	size := c.GetSize()
+	pos := c.Transform().Position
+	size := c.Transform().Scale
 
 	x := pos.X()
 	y := pos.Y()
@@ -125,8 +128,8 @@ func (c *UIImage) updateMesh() {
 	}
 }
 
-// Draw renders the UIImage to the buffer
-func (c *UIImage) Draw(ctx *RenderContext) {
+// Render renders the UIImage to the buffer
+func (c *UIImage) Render(ctx *RenderContext) {
 	s := GetUIShader()
 
 	gl.Uniform1i(s.UniformLocation("uTexture"), 0)
