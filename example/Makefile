@@ -1,11 +1,7 @@
 CONFIG ?= debug
 TAGS   ?=
 
-TARGET := example.bin
-ifeq ($(OS),Windows_NT)
-	TARGET := example.exe
-endif
-
+TARGET := example$(shell go env GOEXE)
 SOURCE ?= $(wildcard ../dusk/*.go ../dusk/*/*.go *.go)
 
 GOFLAGS ?= 

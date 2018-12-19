@@ -19,7 +19,7 @@ out vec4 p_ViewDir;
 
 void main() {
     p_Position = uModel * vec4(_Position, 1.0);
-    p_Normal   = uModel * vec4(_Normal, 1.0);
+    p_Normal   = vec4(mat3(transpose(inverse(uModel))) * _Normal, 1.0);
 	p_TexCoord = vec2(_TexCoord.x, 1.0 - _TexCoord.y);
 	
 	p_LightDir = normalize(-vec4(-0.2, -1.0, -0.3, 0.0));
@@ -58,7 +58,7 @@ void main() {
     if (HasDiffuseMap()) {
         diffuse = texture(uDiffuseMap, p_TexCoord);
     }
-    diffuse = vec4(diff * vec3(diffuse.rgb), diffuse.a);
+    diffuse = vec4(diff * diffuse.rgb, diffuse.a);
 
     float spec = pow(max(0.0, dot(normal.xyz, p_LightDir.xyz)), 32.0);
 
@@ -85,7 +85,7 @@ func GetDefaultShader() *DefaultShader {
 	if _defaultShader != nil {
 		return _defaultShader
 	}
-	Loadf("Loading Default hader")
+	Loadf("Loading Default Shader")
 	_defaultShader = &DefaultShader{}
 	_defaultShader.InitFromData(
 		&ShaderData{

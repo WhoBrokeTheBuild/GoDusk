@@ -1,4 +1,4 @@
-TARGET := MeshLoading$(shell go env GOEXE)
+TARGET := Lighting$(shell go env GOEXE)
 
 SOURCE ?= $(wildcard ../../dusk/*.go ../../dusk/*/*.go *.go)
 

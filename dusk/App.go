@@ -103,7 +103,7 @@ func (app *App) Run() {
 		frameElap += elapsed
 		fpsElap += elapsed
 		app.updateCtx.DeltaTime = float32(elapsed / frameDelay)
-		app.updateCtx.ElapsedTime = elapsed
+		app.updateCtx.ElapsedTime += elapsed
 
 		if fpsElap >= fpsDelay {
 			app.updateCtx.FPS = frameCount

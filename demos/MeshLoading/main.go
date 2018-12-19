@@ -1,8 +1,5 @@
 package main
 
-//go:generate go-bindata -tags !release -debug -pkg $GOPACKAGE -o data.gen.go data/...
-//go:generate go-bindata -tags release -pkg $GOPACKAGE -o data-release.gen.go data/...
-
 import (
 	"image/color"
 
@@ -32,8 +29,6 @@ func (e *demoEntity) Update(ctx *dusk.UpdateContext) {
 }
 
 func main() {
-	dusk.RegisterFunc(Asset)
-
 	opts := dusk.DefaultAppOptions()
 	opts.Window.Title = "GoDusk - Mesh Loading Demo"
 	app, err := dusk.NewApp(opts)

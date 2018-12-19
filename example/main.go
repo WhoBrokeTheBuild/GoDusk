@@ -1,8 +1,5 @@
 package main
 
-//go:generate go-bindata -tags !release -debug -pkg $GOPACKAGE -o data.gen.go data/...
-//go:generate go-bindata -tags release -pkg $GOPACKAGE -o data-release.gen.go data/...
-
 import (
 	"fmt"
 	"image/color"
@@ -64,7 +61,7 @@ func (e *fpsDisplay) Update(ctx *dusk.UpdateContext) {
 }
 
 func main() {
-	dusk.RegisterFunc(Asset)
+	//dusk.RegisterFunc(Asset)
 
 	opts := dusk.DefaultAppOptions()
 	opts.Window.Icons = []string{"data/icons/icon_64.png", "data/icons/icon_32.png"}

@@ -36,14 +36,14 @@ func RegisterModelFormat(name string, exts []string, loader ModelLoader) {
 
 type Model struct {
 	Component
-	shader IShader
+	Shader IShader
 	meshes map[string]*Mesh
 }
 
 // NewModelFromFile returns a new Mesh from the given file
 func NewModelFromFile(entity IEntity, filename string) (*Model, error) {
 	m := &Model{
-		shader: GetDefaultShader(),
+		Shader: GetDefaultShader(),
 		meshes: map[string]*Mesh{},
 	}
 	m.Init(entity)
@@ -94,9 +94,13 @@ func (m *Model) LoadFromFile(filename string) error {
 	return nil
 }
 
+func (m *Model) GetMeshes() map[string]*Mesh {
+	return m.meshes
+}
+
 func (m *Model) Render(ctx *RenderContext) {
-	m.shader.Bind(ctx, m.GetEntity().Transform().GetMatrix())
+	m.Shader.Bind(ctx, m.GetEntity().Transform().GetMatrix())
 	for _, mesh := range m.meshes {
-		mesh.Render(m.shader)
+		mesh.Render(m.Shader)
 	}
 }
